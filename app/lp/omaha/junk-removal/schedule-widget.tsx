@@ -46,9 +46,11 @@ const PROMO_CODES: Record<string, string> = {
 
 type PropertyType = "home" | "business"
 
+// Short enough to sit un-truncated in the rail at 360px, where the three labels
+// share ~300px between them. "Date & Time" / "Pickup Details" ellipsised.
 const STEPS = [
-  { n: 1, label: "Date & Time" },
-  { n: 2, label: "Pickup Details" },
+  { n: 1, label: "Date" },
+  { n: 2, label: "Details" },
   { n: 3, label: "Confirm" },
 ]
 
@@ -135,7 +137,7 @@ export function ScheduleWidget() {
   // ── Success state ──────────────────────────────────────────────────────────
   if (submitted) {
     return (
-      <div className="overflow-hidden rounded-lg border border-line bg-white shadow-brand">
+      <div className="w-full min-w-0 overflow-hidden rounded-lg border border-line bg-white shadow-brand">
         <div className="bg-brand px-6 py-5">
           <h2 className="disp text-xl text-white">You&apos;re on the Schedule</h2>
         </div>
@@ -164,7 +166,7 @@ export function ScheduleWidget() {
   }
 
   return (
-    <div ref={rootRef} className="overflow-hidden rounded-lg border border-line bg-white shadow-brand">
+    <div ref={rootRef} className="w-full min-w-0 overflow-hidden rounded-lg border border-line bg-white shadow-brand">
       {/* Header */}
       <div className="bg-brand px-6 py-5">
         <h2 className="disp text-xl text-white">Book Your Omaha Pickup</h2>
@@ -179,7 +181,7 @@ export function ScheduleWidget() {
           const active = step === s.n
           const done = step > s.n
           return (
-            <div key={s.n} className="flex flex-1 items-center gap-1.5 sm:gap-2">
+            <div key={s.n} className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
               <span
                 className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-extrabold transition-colors ${
                   done ? "bg-flame text-white" : active ? "bg-brand text-white" : "bg-white text-muted-foreground ring-1 ring-line"
@@ -190,7 +192,7 @@ export function ScheduleWidget() {
               {/* Labels stay visible on mobile — three short labels fit, and a
                   bare numbered rail gives no sense of what's still ahead. */}
               <span
-                className={`whitespace-nowrap text-[11.5px] font-bold leading-tight sm:text-[12px] ${
+                className={`truncate text-[11.5px] font-bold leading-tight sm:text-[12px] ${
                   active ? "text-ink" : "text-muted-foreground"
                 }`}
               >
@@ -216,7 +218,7 @@ export function ScheduleWidget() {
                   read or hit. Here every card keeps a 62px / 44px-tall target,
                   the thumb scrolls the strip directly, and the arrows (desktop
                   only, where there's no swipe) nudge it along. */}
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 <button
                   type="button"
                   onClick={() => nudgeDates(-1)}
@@ -226,9 +228,14 @@ export function ScheduleWidget() {
                   <ChevronLeft className="h-4 w-4" />
                 </button>
 
+                {/* `flex-1 min-w-0` is load-bearing, not cosmetic. As a plain
+                    flex item this strip takes its 18 cards' max-content (~1260px)
+                    as its flex base size, which propagates all the way up and
+                    stretches the hero's grid track — overflow-x never gets the
+                    chance to scroll. Basing it at 0 keeps the scroll inside. */}
                 <div
                   ref={dateStripRef}
-                  className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto scroll-smooth px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  className="-mx-1 flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto scroll-smooth px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
                   {availableDates.map((date) => {
                     const isSelected = selectedDate && isSameDay(date, selectedDate)
@@ -285,8 +292,14 @@ export function ScheduleWidget() {
                       type="button"
                       disabled={!selectedDate}
                       onClick={() => setSelectedSlot(s.id)}
-                      className={`rounded-lg border-2 p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
-                        isSelected ? "border-flame bg-brand-select" : "border-line hover:border-[#c4c1bc]"
+                      className={`rounded-lg border-2 p-3 text-left transition-all disabled:cursor-not-allowed ${
+                        isSelected
+                          ? "border-flame bg-brand-select"
+                          : selectedDate
+                            ? "border-line hover:border-flame"
+                            // Waiting on a date: dashed and muted reads as "not
+                            // yet", where a flat 40% opacity read as broken.
+                            : "border-dashed border-line bg-muted/40 opacity-70"
                       }`}
                     >
                       <p className={`text-sm font-semibold ${isSelected ? "text-flame" : "text-ink"}`}>{s.label}</p>

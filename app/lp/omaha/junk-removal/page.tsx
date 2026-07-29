@@ -37,6 +37,12 @@ export const metadata: Metadata = {
       the page converts. Nothing decorative goes between the H1 and the module.
    ============================================================ */
 
+const HOW_IT_WORKS = [
+  { title: "Pick a window", copy: "Choose a day and arrival window. Takes about two minutes." },
+  { title: "We show up", copy: "A uniformed crew texts you when they're 30 minutes out." },
+  { title: "You approve the price", copy: "Quoted on site before anything goes on the truck." },
+]
+
 const WHY = [
   { icon: Clock, title: "Same-week windows", copy: `Most ${loc.city} pickups land within two to three days, with same-day slots when a route has room.` },
   { icon: Truck, title: "We do the carrying", copy: "Basements, attics, second floors, tight stairwells — the crew brings it out. You don't move a thing." },
@@ -78,44 +84,64 @@ export default function OmahaJunkRemovalPage() {
           Mobile: a deliberately short navy band, then the module — so the
           module's header is visible above the fold without scrolling. */}
       <section id="hero" className="scroll-mt-[72px] bg-brand">
-        <div className={`${WRAP} grid items-start gap-8 pb-8 pt-7 md:pb-12 md:pt-10 lg:grid-cols-[1fr_468px] lg:gap-12 lg:pb-14 lg:pt-12`}>
-          <div className="text-white lg:pt-4">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-[0.09em] text-white">
+        {/* `min-w-0` on both columns: grid items default to a min-content
+            minimum, so any wide descendant (the module's date strip) would
+            stretch the track past the viewport instead of scrolling inside it. */}
+        <div className={`${WRAP} grid grid-cols-1 items-start gap-8 pb-8 pt-7 md:pb-12 md:pt-10 lg:grid-cols-[minmax(0,1fr)_468px] lg:gap-12 lg:pb-14 lg:pt-12`}>
+          <div className="min-w-0 text-white lg:pt-2">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-[0.09em] text-white sm:px-3.5 sm:text-[11.5px]">
               <Truck className="h-3.5 w-3.5" />
               Serving {loc.city} &amp; the metro
             </span>
 
-            <h1 className="mt-4 text-[clamp(31px,5.2vw,54px)] font-extrabold leading-[1.06] tracking-[-0.02em] text-white">
+            {/* Capped well below the old 54px: at full width this headline ran
+                to three lines, which pushed the module off a laptop fold. */}
+            <h1 className="mt-3.5 text-[clamp(27px,4.3vw,44px)] font-extrabold leading-[1.08] tracking-[-0.02em] text-white">
               Junk Removal in {loc.city}, Booked in Two Minutes
             </h1>
 
             {/* Bullets, not a paragraph: scannable at a glance on a phone. */}
-            <ul className="mt-5 flex flex-col gap-2.5">
+            <ul className="mt-4 flex flex-col gap-2">
               {HERO_INCLUDES.map((inc) => (
-                <li key={inc} className="flex items-start gap-2.5 text-[14.5px] leading-snug text-[#dbe7fb] md:text-[16px]">
-                  <span className="mt-0.5 flex h-[19px] w-[19px] shrink-0 items-center justify-center rounded-full border border-flame/40 bg-flame/20 text-flame">
-                    <Check className="h-[11px] w-[11px]" strokeWidth={3.5} />
+                <li key={inc} className="flex items-start gap-2.5 text-[14px] leading-snug text-[#dbe7fb] md:text-[15.5px]">
+                  <span className="mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-flame/40 bg-flame/20 text-flame">
+                    <Check className="h-[10px] w-[10px]" strokeWidth={3.5} />
                   </span>
                   {inc}
                 </li>
               ))}
             </ul>
 
-            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-[#dbe7fb]">
-              <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-[#dbe7fb] md:text-[13px]">
+              <span className="inline-flex items-center gap-1.5">
                 <Stars className="text-flame" />
                 <span className="font-extrabold text-white">{loc.reviewRating}</span>
                 Google ({loc.reviewCount})
               </span>
-              <span className="hidden h-1 w-1 rounded-full bg-white/35 sm:block" />
-              <span className="whitespace-nowrap">{loc.licenseLine}</span>
+              <span className="hidden h-1 w-1 shrink-0 rounded-full bg-white/35 sm:block" />
+              <span>{loc.licenseLine}</span>
             </div>
 
             <HeroCta />
+
+            {/* Desktop only. The module is the taller column, so without this the
+                copy column bottoms out early and leaves a dead blue slab beside
+                it. Three short steps earn that space instead of padding it. */}
+            <ol className="mt-9 hidden gap-6 border-t border-white/15 pt-7 lg:grid lg:grid-cols-3">
+              {HOW_IT_WORKS.map((s, i) => (
+                <li key={s.title}>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-[12.5px] font-extrabold text-flame ring-1 ring-white/20">
+                    {i + 1}
+                  </span>
+                  <p className="mt-2.5 text-[14.5px] font-bold text-white">{s.title}</p>
+                  <p className="mt-1 text-[13px] leading-snug text-[#bed3f7]">{s.copy}</p>
+                </li>
+              ))}
+            </ol>
           </div>
 
           {/* Module — untouched in content; sticky on desktop only. */}
-          <div id={BOOKING_ID} className="scroll-mt-[72px] lg:sticky lg:top-[76px]">
+          <div id={BOOKING_ID} className="min-w-0 scroll-mt-[72px] lg:sticky lg:top-[76px]">
             <ScheduleWidget />
           </div>
         </div>
