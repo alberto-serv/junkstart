@@ -1,47 +1,66 @@
 import type { Metadata } from "next"
 import Image from "next/image"
-import { Check, ShieldCheck, Truck, Recycle, Clock, Phone, Star } from "lucide-react"
-import { LandingHeader } from "@/app/landing/landing-header"
-import { LandingFooter } from "@/app/landing/landing-footer"
-import { Faq } from "@/app/landing/faq"
+import {
+  Check, Clock, ExternalLink, Recycle, ShieldCheck, Star, Truck,
+} from "lucide-react"
+import { LpHeader, AvailabilityRibbon, LpFooter } from "./lp-chrome"
 import { ScheduleWidget } from "./schedule-widget"
+import { Faq } from "./faq"
+import { HeroCta, StickyBookBar } from "./cta"
+import {
+  WRAP, BOOKING_ID, loc, brand, HERO_INCLUDES, REVIEWS,
+} from "./config"
 import { JOBS, PHONE, PHONE_TEL, TRUCK_CAPACITY } from "@/lib/junk-data"
 
-const CITY = "Omaha"
-const STATE = "NE"
-
 export const metadata: Metadata = {
-  title: `Junk Removal in ${CITY}, ${STATE} | JunkStart Junk Removal`,
+  title: `Junk Removal in ${loc.city}, ${loc.state} | JunkStart Junk Removal`,
   description:
     "Same-week junk removal and hauling across Omaha and the metro. Furniture, appliances, garage and estate cleanouts, construction debris and more. Book your pickup window online in under two minutes.",
 }
 
-const NEIGHBORHOODS = [
-  "Downtown & Old Market",
-  "Dundee & Benson",
-  "Aksarben & Elmwood Park",
-  "Millard",
-  "West Omaha & Elkhorn",
-  "Papillion & La Vista",
-  "Bellevue & Offutt",
-  "Council Bluffs, IA",
-]
+/* ============================================================
+   Omaha × Junk Removal — product-led landing page.
+
+   Structure follows the Voda LP standard: micro-header → availability ribbon →
+   compact hero with the booking module beside it → reviews → guarantee → local
+   proof → FAQ → final CTA → NAP footer, with a mobile sticky bar as the single
+   mobile CTA.
+
+   Two rules this page is built around:
+
+   1. ONE content column. Every band below uses WRAP, so the logo, the H1, the
+      module, every section heading, the FAQ and the footer share one left and
+      one right edge. Per-section widths produce a staircase of left edges.
+
+   2. The hero is COMPACT on mobile. The booking module stacks directly under it
+      and must peek above the fold — that peek is the scroll cue and the reason
+      the page converts. Nothing decorative goes between the H1 and the module.
+   ============================================================ */
 
 const WHY = [
-  { icon: Clock, title: "Same-week windows", copy: "Most Omaha pickups land within two to three days, with same-day slots when a route has room." },
+  { icon: Clock, title: "Same-week windows", copy: `Most ${loc.city} pickups land within two to three days, with same-day slots when a route has room.` },
   { icon: Truck, title: "We do the carrying", copy: "Basements, attics, second floors, tight stairwells — the crew brings it out. You don't move a thing." },
   { icon: ShieldCheck, title: "Licensed & insured", copy: "Background-checked, uniformed crews who text you when they're 30 minutes out." },
-  { icon: Recycle, title: "Donate & recycle first", copy: "Usable goods go to Omaha-area charity partners, and you get the itemized receipt." },
+  { icon: Recycle, title: "Donate & recycle first", copy: `Usable goods go to ${loc.city}-area charity partners, and you get the itemized receipt.` },
 ]
 
-function CheckItem({ children }: { children: React.ReactNode }) {
+function Stars({ n = 5, className = "" }: { n?: number; className?: string }) {
   return (
-    <li className="flex items-start gap-3">
-      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-flame text-white">
-        <Check className="h-3 w-3" strokeWidth={3.5} />
-      </span>
-      <span className="text-[15px] leading-relaxed text-ink">{children}</span>
-    </li>
+    <span className={`inline-flex gap-0.5 ${className}`} aria-label={`${n} out of 5 stars`}>
+      {Array.from({ length: n }).map((_, i) => (
+        <Star key={i} className="h-[15px] w-[15px] fill-current" />
+      ))}
+    </span>
+  )
+}
+
+function SectionHead({ kicker, title, sub, center }: { kicker: string; title: string; sub?: string; center?: boolean }) {
+  return (
+    <div className={`mb-7 ${center ? "text-center" : ""}`}>
+      <div className="mb-2.5 text-[12px] font-bold uppercase tracking-[0.08em] text-flame">{kicker}</div>
+      <h2 className="text-[clamp(25px,3.4vw,34px)] font-extrabold text-ink">{title}</h2>
+      {sub && <p className={`mt-2 max-w-[56ch] text-[16px] text-body ${center ? "mx-auto" : ""}`}>{sub}</p>}
+    </div>
   )
 }
 
@@ -49,155 +68,183 @@ export default function OmahaJunkRemovalPage() {
   const jobs = JOBS.filter((j) => !j.consultationOnly)
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white">
-      <LandingHeader />
+    // Bottom padding clears the fixed mobile bar; removed once it's hidden.
+    <div className="min-h-screen overflow-x-hidden bg-white pb-[92px] lg:pb-0">
+      <LpHeader />
+      <AvailabilityRibbon />
 
-      {/* ── Hero + scheduling module ──────────────────────────────────────
-          The module is the page's single conversion point: it rides the right
-          rail on desktop and stacks under the pitch on mobile. Sticky so it
-          stays reachable while the marketing copy scrolls past it. */}
-      <section className="relative border-b border-line-soft">
-        <div className="absolute inset-0">
-          <Image
-            src="/images/truck-on-the-road.webp"
-            alt="A JunkStart truck on the road"
-            fill
-            priority
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-brand/90 via-brand/75 to-brand/55" />
-        </div>
+      {/* ── Hero + booking module ────────────────────────────────────────
+          Desktop: copy left, module in a sticky right rail.
+          Mobile: a deliberately short navy band, then the module — so the
+          module's header is visible above the fold without scrolling. */}
+      <section id="hero" className="scroll-mt-[72px] bg-brand">
+        <div className={`${WRAP} grid items-start gap-8 pb-8 pt-7 md:pb-12 md:pt-10 lg:grid-cols-[1fr_468px] lg:gap-12 lg:pb-14 lg:pt-12`}>
+          <div className="text-white lg:pt-4">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-[0.09em] text-white">
+              <Truck className="h-3.5 w-3.5" />
+              Serving {loc.city} &amp; the metro
+            </span>
 
-        <div className="relative mx-auto w-full max-w-[1400px] px-4 py-12 md:px-6 md:py-16">
-          <div className="grid items-start gap-10 lg:grid-cols-[1fr_460px] lg:gap-14">
-            {/* Pitch */}
-            <div className="text-white lg:pt-6">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-white backdrop-blur">
-                <Star className="h-3.5 w-3.5" />
-                Serving {CITY} &amp; the metro
+            <h1 className="mt-4 text-[clamp(31px,5.2vw,54px)] font-extrabold leading-[1.06] tracking-[-0.02em] text-white">
+              Junk Removal in {loc.city}, Booked in Two Minutes
+            </h1>
+
+            {/* Bullets, not a paragraph: scannable at a glance on a phone. */}
+            <ul className="mt-5 flex flex-col gap-2.5">
+              {HERO_INCLUDES.map((inc) => (
+                <li key={inc} className="flex items-start gap-2.5 text-[14.5px] leading-snug text-[#dbe7fb] md:text-[16px]">
+                  <span className="mt-0.5 flex h-[19px] w-[19px] shrink-0 items-center justify-center rounded-full border border-flame/40 bg-flame/20 text-flame">
+                    <Check className="h-[11px] w-[11px]" strokeWidth={3.5} />
+                  </span>
+                  {inc}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-[#dbe7fb]">
+              <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                <Stars className="text-flame" />
+                <span className="font-extrabold text-white">{loc.reviewRating}</span>
+                Google ({loc.reviewCount})
               </span>
-
-              <h1 className="mt-6 text-4xl leading-[1.05] sm:text-5xl md:text-[56px]">
-                Junk Removal in {CITY}, Booked in Two Minutes
-              </h1>
-
-              <p className="mt-6 max-w-xl text-[15px] leading-relaxed text-white/90 md:text-base">
-                Furniture, appliances, garage and estate cleanouts, construction debris — one
-                item or a whole property. Pick your day and window, tell us what to grab, and a
-                crew handles the lifting, loading and disposal.
-              </p>
-
-              <ul className="mt-8 grid gap-3 sm:grid-cols-2">
-                {[
-                  "No payment when you book",
-                  "All-in price quoted on site",
-                  "Loading & disposal included",
-                  "Mon–Sat pickup windows",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-[14.5px] text-white/95">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-white" strokeWidth={3} />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-
-              <a
-                href={PHONE_TEL}
-                className="mt-8 inline-flex items-center gap-2 text-base font-bold text-white transition-opacity hover:opacity-80"
-              >
-                <Phone className="h-4 w-4" />
-                Prefer to talk? {PHONE}
-              </a>
+              <span className="hidden h-1 w-1 rounded-full bg-white/35 sm:block" />
+              <span className="whitespace-nowrap">{loc.licenseLine}</span>
             </div>
 
-            {/* Scheduling module */}
-            <div className="lg:sticky lg:top-[86px]">
-              <ScheduleWidget />
-            </div>
+            <HeroCta />
+          </div>
+
+          {/* Module — untouched in content; sticky on desktop only. */}
+          <div id={BOOKING_ID} className="scroll-mt-[72px] lg:sticky lg:top-[76px]">
+            <ScheduleWidget />
           </div>
         </div>
       </section>
 
-      {/* ── Why JunkStart Omaha ──────────────────────────────────────────── */}
-      <section className="mx-auto w-full max-w-[1400px] px-4 py-16 md:px-6 md:py-20">
-        <div className="max-w-2xl">
-          <h2 className="text-3xl text-ink md:text-4xl">Why {CITY} Books JunkStart</h2>
-          <p className="mt-4 text-[15px] leading-relaxed text-body">
-            Every truck holds {TRUCK_CAPACITY} cubic yards, and you only pay for the space your
-            pile actually takes up.
-          </p>
+      {/* ── Why JunkStart ────────────────────────────────────────────────── */}
+      <section className="bg-white py-14 md:py-[72px]">
+        <div className={WRAP}>
+          <SectionHead
+            kicker={`Why ${loc.city} books us`}
+            title="A crew that shows up, and a price that holds"
+            sub={`Every truck holds ${TRUCK_CAPACITY} cubic yards, and you only pay for the space your pile actually takes up.`}
+          />
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {WHY.map((w) => (
+              <div key={w.title} className="rounded-lg border border-line bg-white p-5 shadow-brand-sm">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-md bg-flame/10">
+                  <w.icon className="h-5 w-5 text-flame" />
+                </span>
+                <h3 className="mt-4 text-[17.5px] font-bold text-ink">{w.title}</h3>
+                <p className="mt-2 text-[14.5px] leading-relaxed text-body">{w.copy}</p>
+              </div>
+            ))}
+          </div>
         </div>
+      </section>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {WHY.map((w) => (
-            <div key={w.title} className="rounded-lg border border-line bg-white p-6">
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-md bg-flame/10">
-                <w.icon className="h-5 w-5 text-flame" />
-              </span>
-              <h3 className="mt-4 text-lg text-ink">{w.title}</h3>
-              <p className="mt-2 text-[14.5px] leading-relaxed text-body">{w.copy}</p>
-            </div>
-          ))}
+      {/* ── Reviews ──────────────────────────────────────────────────────── */}
+      <section className="bg-muted/50 py-14 md:py-[72px]">
+        <div className={WRAP}>
+          <SectionHead kicker={`Real pickups in ${loc.city}`} title="Neighbors who booked this service" />
+          <div className="grid gap-4 md:grid-cols-3">
+            {REVIEWS.map((r) => (
+              <figure key={r.name} className="rounded-lg border border-line bg-white p-5 shadow-brand-sm">
+                <Stars n={r.stars} className="text-flame" />
+                <blockquote className="mt-3 text-[15.5px] leading-relaxed text-ink">
+                  &ldquo;{r.quote}&rdquo;
+                </blockquote>
+                <figcaption className="mt-4 flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-[15px] font-bold text-white">
+                    {r.name.charAt(0)}
+                  </span>
+                  <span>
+                    <span className="block text-[14.5px] font-bold text-ink">{r.name}</span>
+                    <span className="block text-[13px] text-muted-foreground">{r.area}</span>
+                  </span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Guarantee ────────────────────────────────────────────────────── */}
+      <section className="bg-white py-14 md:py-[72px]">
+        <div className={WRAP}>
+          <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-brand via-brand-deep to-brand-ink px-7 py-9 text-center md:px-10">
+            <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(440px_220px_at_80%_-20%,rgba(241,93,42,0.28),transparent_65%)]" />
+            <span className="relative mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-lg border border-flame/35 bg-flame/15 text-flame">
+              <ShieldCheck className="h-8 w-8" />
+            </span>
+            <h2 className="relative text-[clamp(23px,3vw,28px)] font-extrabold text-white">{brand.guarantee.title}</h2>
+            <p className="relative mx-auto mt-3 max-w-[54ch] text-[16px] leading-relaxed text-[#dbe7fb]">
+              {brand.guarantee.body}
+            </p>
+          </div>
         </div>
       </section>
 
       {/* ── What we haul ─────────────────────────────────────────────────── */}
-      <section className="bg-muted/40">
-        <div className="mx-auto w-full max-w-[1400px] px-4 py-16 md:px-6 md:py-20">
-          <div className="grid gap-10 md:grid-cols-[1fr_1.1fr] md:gap-14">
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg">
-              <Image
-                src="/images/crew.webp"
-                alt="A JunkStart crew loading a truck"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 45vw"
-              />
-            </div>
-            <div>
-              <h2 className="text-3xl text-ink md:text-4xl">What We Haul Away</h2>
-              <div className="mt-7 grid gap-x-8 gap-y-3 sm:grid-cols-2">
-                {jobs.map((job) => {
-                  const Icon = job.icon
-                  return (
-                    <div key={job.id} className="flex items-start gap-2.5">
-                      <Icon className="mt-0.5 h-[18px] w-[18px] shrink-0 text-brand" strokeWidth={1.75} />
-                      <div>
-                        <p className="text-[14.5px] font-semibold leading-tight text-ink">{job.shortName}</p>
-                        <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{job.tagline}</p>
-                      </div>
+      <section className="bg-muted/50 py-14 md:py-[72px]">
+        <div className={`${WRAP} grid gap-9 md:grid-cols-[0.95fr_1.05fr] md:gap-12`}>
+          <div className="relative aspect-[4/3] w-full self-start overflow-hidden rounded-lg">
+            <Image
+              src="/images/crew.webp"
+              alt="A JunkStart crew loading a truck"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 45vw"
+            />
+          </div>
+          <div>
+            <SectionHead kicker="One item or a whole property" title="What we haul away" />
+            <div className="grid gap-x-7 gap-y-3.5 sm:grid-cols-2">
+              {jobs.map((job) => {
+                const Icon = job.icon
+                return (
+                  <div key={job.id} className="flex items-start gap-2.5">
+                    <Icon className="mt-0.5 h-[18px] w-[18px] shrink-0 text-brand" strokeWidth={1.75} />
+                    <div>
+                      <p className="text-[14.5px] font-bold leading-tight text-ink">{job.shortName}</p>
+                      <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{job.tagline}</p>
                     </div>
-                  )
-                })}
-              </div>
-              <p className="mt-7 text-[14px] leading-relaxed text-muted-foreground">
-                We can&apos;t take hazardous material — paint, solvents, motor oil, pesticides,
-                asbestos, propane tanks or medical waste. Almost everything else is fair game.
-              </p>
+                  </div>
+                )
+              })}
             </div>
+            <p className="mt-6 text-[14px] leading-relaxed text-muted-foreground">
+              We can&apos;t take hazardous material — paint, solvents, motor oil, pesticides,
+              asbestos, propane tanks or medical waste. Almost everything else is fair game.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* ── Service area ─────────────────────────────────────────────────── */}
-      <section className="mx-auto w-full max-w-[1400px] px-4 py-16 md:px-6 md:py-20">
-        <div className="grid gap-10 md:grid-cols-2 md:gap-14">
+      {/* ── Local proof ──────────────────────────────────────────────────── */}
+      <section className="bg-white py-14 md:py-[72px]">
+        <div className={`${WRAP} grid items-center gap-9 md:grid-cols-[1.1fr_1fr] md:gap-12`}>
           <div>
-            <h2 className="text-3xl text-ink md:text-4xl">Where We Pick Up Around {CITY}</h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-body">
-              Crews run the metro Monday through Saturday, from the Old Market out to Elkhorn and
-              across the river into Council Bluffs.
-            </p>
-            <ul className="mt-7 grid gap-3 sm:grid-cols-2">
-              {NEIGHBORHOODS.map((n) => (
-                <CheckItem key={n}>{n}</CheckItem>
-              ))}
-            </ul>
+            <SectionHead
+              kicker="Proudly local"
+              title={`Serving ${loc.city} & the metro`}
+              sub={`Locally staffed crews, background-checked and fully insured. Same-week availability across the area, ${loc.hours}:`}
+            />
+            <p className="text-[15.5px] leading-relaxed text-body">{loc.serviceArea.join(" · ")}</p>
+            <a
+              href={loc.gbpUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-flex items-center gap-2 text-[14.5px] font-bold text-flame hover:text-flame-deep"
+            >
+              <ExternalLink className="h-[15px] w-[15px]" />
+              See our Google Business Profile &amp; reviews
+            </a>
           </div>
-          <div className="relative aspect-[3/2] w-full self-center overflow-hidden rounded-lg">
+          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg">
             <Image
               src="/images/single-truck.webp"
-              alt="A JunkStart truck ready for pickup"
+              alt={`A JunkStart truck parked at an ${loc.city} home`}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 45vw"
@@ -207,37 +254,36 @@ export default function OmahaJunkRemovalPage() {
       </section>
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-      <section className="bg-muted/40">
-        <div className="mx-auto w-full max-w-[1400px] px-4 py-16 md:px-6 md:py-20">
-          <div className="mx-auto max-w-3xl">
-            <h2 className="text-3xl text-ink md:text-4xl">Frequently Asked Questions</h2>
-            <div className="mt-6">
-              <Faq />
-            </div>
-          </div>
+      <section className="bg-muted/50 py-14 md:py-[72px]">
+        <div className={WRAP}>
+          <SectionHead kicker="Good to know" title="Frequently asked questions" center />
+          <Faq />
         </div>
       </section>
 
-      {/* ── Closing band ─────────────────────────────────────────────────── */}
-      <section className="bg-brand-band">
-        <div className="mx-auto w-full max-w-[1400px] px-4 py-16 md:px-6 md:py-20">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl text-ink md:text-4xl">Ready When You Are, {CITY}</h2>
-            <p className="mx-auto mt-5 max-w-md text-[15px] leading-relaxed text-body">
-              Scroll back up to grab a pickup window, or call and we&apos;ll book it for you.
-            </p>
+      {/* ── Final CTA ────────────────────────────────────────────────────── */}
+      <section className="bg-brand py-14 md:py-[72px]">
+        <div className={`${WRAP} text-center`}>
+          <h2 className="text-[clamp(25px,3.4vw,32px)] font-extrabold text-white">
+            Ready when you are, {loc.city}
+          </h2>
+          <p className="mx-auto mt-3 max-w-[44ch] text-[16.5px] text-[#dbe7fb]">
+            Grab a pickup window in about two minutes. Nothing is charged today.
+          </p>
+          <div className="mt-7 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <HeroCta variant="light" />
             <a
               href={PHONE_TEL}
-              className="mt-8 inline-flex items-center gap-2 rounded-btn bg-flame px-8 py-3.5 text-sm font-bold uppercase tracking-[0.04em] text-white shadow-flame-glow transition-colors hover:bg-flame-deep"
+              className="text-[15px] font-bold text-white underline-offset-4 transition-opacity hover:opacity-80 hover:underline"
             >
-              <Phone className="h-4 w-4" />
-              {PHONE}
+              or call {PHONE}
             </a>
           </div>
         </div>
       </section>
 
-      <LandingFooter />
+      <LpFooter />
+      <StickyBookBar />
     </div>
   )
 }

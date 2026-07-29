@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -58,11 +58,12 @@ export function ScheduleWidget() {
   const [step, setStep] = useState(1)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const dateStripRef = useRef<HTMLDivElement>(null)
 
   // Step 1
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedSlot, setSelectedSlot] = useState("")
-  const [weekStart, setWeekStart] = useState(0)
 
   // Step 2
   const [propertyType, setPropertyType] = useState<PropertyType>("home")
@@ -81,11 +82,27 @@ export function ScheduleWidget() {
   const [promoError, setPromoError] = useState(false)
 
   const availableDates = useMemo(() => getAvailableDates(), [])
-  const visibleDates = availableDates.slice(weekStart, weekStart + 5)
-  const canGoBack = weekStart > 0
-  const canGoForward = weekStart + 5 < availableDates.length
+
+  /** Nudge the date strip by roughly a work-week. Desktop affordance only —
+   *  on a phone the strip is swiped directly, which is why the arrows hide. */
+  const nudgeDates = (dir: 1 | -1) =>
+    dateStripRef.current?.scrollBy({ left: dir * 300, behavior: "smooth" })
 
   const slot = TIME_SLOTS.find((s) => s.id === selectedSlot)
+
+  /**
+   * Step changes re-render the panel below the fold on a phone: without this the
+   * customer is left staring at whatever was mid-viewport, usually the middle of
+   * the previous step's fields. Pull the module's header back to the top on
+   * every step change so each step starts where the eye already is.
+   */
+  const goToStep = useCallback((next: number) => {
+    setStep(next)
+    const el = rootRef.current
+    if (!el) return
+    const top = el.getBoundingClientRect().top + window.scrollY - 72
+    if (window.scrollY > top) window.scrollTo({ top, behavior: "smooth" })
+  }, [])
 
   const step1Complete = Boolean(selectedDate && selectedSlot)
   const step2Complete = Boolean(
@@ -147,7 +164,7 @@ export function ScheduleWidget() {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-line bg-white shadow-brand">
+    <div ref={rootRef} className="overflow-hidden rounded-lg border border-line bg-white shadow-brand">
       {/* Header */}
       <div className="bg-brand px-6 py-5">
         <h2 className="disp text-xl text-white">Book Your Omaha Pickup</h2>
@@ -157,12 +174,12 @@ export function ScheduleWidget() {
       </div>
 
       {/* Step rail */}
-      <div className="flex items-center gap-2 border-b border-line-soft bg-sand-soft px-4 py-3">
+      <div className="flex items-center gap-1.5 border-b border-line-soft bg-sand-soft px-3 py-3 sm:gap-2 sm:px-4">
         {STEPS.map((s, i) => {
           const active = step === s.n
           const done = step > s.n
           return (
-            <div key={s.n} className="flex flex-1 items-center gap-2">
+            <div key={s.n} className="flex flex-1 items-center gap-1.5 sm:gap-2">
               <span
                 className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-extrabold transition-colors ${
                   done ? "bg-flame text-white" : active ? "bg-brand text-white" : "bg-white text-muted-foreground ring-1 ring-line"
@@ -170,8 +187,10 @@ export function ScheduleWidget() {
               >
                 {done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : s.n}
               </span>
+              {/* Labels stay visible on mobile — three short labels fit, and a
+                  bare numbered rail gives no sense of what's still ahead. */}
               <span
-                className={`hidden text-[12px] font-bold leading-tight sm:block ${
+                className={`whitespace-nowrap text-[11.5px] font-bold leading-tight sm:text-[12px] ${
                   active ? "text-ink" : "text-muted-foreground"
                 }`}
               >
@@ -192,51 +211,63 @@ export function ScheduleWidget() {
                 <CalendarDays className="h-4 w-4 text-flame" />
                 Pick a day
               </Label>
+              {/* A swipeable strip rather than a 5-up paged grid. Five cards
+                  inside a phone-width module leaves ~40px each — too tight to
+                  read or hit. Here every card keeps a 62px / 44px-tall target,
+                  the thumb scrolls the strip directly, and the arrows (desktop
+                  only, where there's no swipe) nudge it along. */}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setWeekStart(Math.max(0, weekStart - 5))}
-                  disabled={!canGoBack}
+                  onClick={() => nudgeDates(-1)}
                   aria-label="Earlier dates"
-                  className="flex h-10 w-8 shrink-0 items-center justify-center rounded-md border-[1.5px] border-line text-ink transition-colors hover:border-[#c4c1bc] disabled:cursor-not-allowed disabled:opacity-30"
+                  className="hidden h-11 w-8 shrink-0 items-center justify-center rounded-md border-[1.5px] border-line text-ink transition-colors hover:border-flame hover:text-flame sm:flex"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <div className="grid flex-1 grid-cols-5 gap-1.5">
-                  {visibleDates.map((date) => {
+
+                <div
+                  ref={dateStripRef}
+                  className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto scroll-smooth px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                >
+                  {availableDates.map((date) => {
                     const isSelected = selectedDate && isSameDay(date, selectedDate)
                     return (
                       <button
                         key={date.toISOString()}
                         type="button"
                         onClick={() => setSelectedDate(date)}
-                        className={`flex flex-col items-center rounded-lg border-2 px-1 py-2.5 text-center transition-all ${
-                          isSelected ? "border-brand bg-brand" : "border-line hover:border-[#c4c1bc]"
+                        aria-pressed={Boolean(isSelected)}
+                        className={`flex w-[62px] shrink-0 snap-start flex-col items-center rounded-lg border-2 px-1 py-2.5 text-center transition-all ${
+                          isSelected ? "border-brand bg-brand" : "border-line hover:border-flame"
                         }`}
                       >
-                        <span className={`text-[10px] font-bold uppercase tracking-[0.08em] ${isSelected ? "text-[#c3d5f7]" : "text-muted-foreground"}`}>
+                        <span className={`text-[10.5px] font-bold uppercase tracking-[0.08em] ${isSelected ? "text-[#c3d5f7]" : "text-muted-foreground"}`}>
                           {date.toLocaleDateString("en-US", { weekday: "short" })}
                         </span>
-                        <span className={`my-0.5 text-[19px] font-extrabold ${isSelected ? "text-white" : "text-ink"}`}>
+                        <span className={`my-0.5 text-[20px] font-extrabold leading-none ${isSelected ? "text-white" : "text-ink"}`}>
                           {date.getDate()}
                         </span>
-                        <span className={`text-[10px] ${isSelected ? "text-[#c3d5f7]" : "text-muted-foreground"}`}>
+                        <span className={`text-[10.5px] ${isSelected ? "text-[#c3d5f7]" : "text-muted-foreground"}`}>
                           {date.toLocaleDateString("en-US", { month: "short" })}
                         </span>
                       </button>
                     )
                   })}
                 </div>
+
                 <button
                   type="button"
-                  onClick={() => setWeekStart(Math.min(availableDates.length - 5, weekStart + 5))}
-                  disabled={!canGoForward}
+                  onClick={() => nudgeDates(1)}
                   aria-label="Later dates"
-                  className="flex h-10 w-8 shrink-0 items-center justify-center rounded-md border-[1.5px] border-line text-ink transition-colors hover:border-[#c4c1bc] disabled:cursor-not-allowed disabled:opacity-30"
+                  className="hidden h-11 w-8 shrink-0 items-center justify-center rounded-md border-[1.5px] border-line text-ink transition-colors hover:border-flame hover:text-flame sm:flex"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
+              <p className="mt-1.5 text-[11.5px] text-muted-foreground sm:hidden">
+                Swipe for more dates · crews run {"Mon–Sat"}
+              </p>
             </div>
 
             <div>
@@ -315,36 +346,36 @@ export function ScheduleWidget() {
                 value={addressLine2}
                 onChange={(e) => setAddressLine2(e.target.value)}
                 placeholder="Apt, unit, or suite (optional)"
-                className="mt-2"
+                className="mt-2 h-11 sm:h-10"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="lp-first" className="text-sm font-semibold text-ink">First name *</Label>
-                <Input id="lp-first" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="John" className="mt-1" />
+                <Input id="lp-first" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="John" className="mt-1 h-11 sm:h-10" />
               </div>
               <div>
                 <Label htmlFor="lp-last" className="text-sm font-semibold text-ink">Last name *</Label>
-                <Input id="lp-last" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Doe" className="mt-1" />
+                <Input id="lp-last" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Doe" className="mt-1 h-11 sm:h-10" />
               </div>
             </div>
 
             {propertyType === "business" && (
               <div>
                 <Label htmlFor="lp-company" className="text-sm font-semibold text-ink">Business name</Label>
-                <Input id="lp-company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Your company" className="mt-1" />
+                <Input id="lp-company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Your company" className="mt-1 h-11 sm:h-10" />
               </div>
             )}
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label htmlFor="lp-email" className="text-sm font-semibold text-ink">Email *</Label>
-                <Input id="lp-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@example.com" className="mt-1" />
+                <Input id="lp-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@example.com" className="mt-1 h-11 sm:h-10" />
               </div>
               <div>
                 <Label htmlFor="lp-phone" className="text-sm font-semibold text-ink">Mobile number *</Label>
-                <Input id="lp-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(402) 555-0142" className="mt-1" />
+                <Input id="lp-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(402) 555-0142" className="mt-1 h-11 sm:h-10" />
               </div>
             </div>
 
@@ -356,7 +387,7 @@ export function ScheduleWidget() {
                 onChange={(e) => setItems(e.target.value)}
                 rows={4}
                 placeholder="Sectional sofa, two mattresses, a fridge, and roughly ten boxes from the basement. Stairs up to the driveway, gate code 4412."
-                className="mt-1"
+                className="mt-1 h-11 sm:h-10"
               />
               <p className="mt-1.5 text-xs text-muted-foreground">
                 A rough list is plenty — it helps us send the right size crew and truck.
@@ -414,7 +445,7 @@ export function ScheduleWidget() {
                   onChange={(e) => { setPromo(e.target.value); setPromoError(false) }}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPromo() } }}
                   placeholder="OMAHA25"
-                  className="flex-1 uppercase"
+                  className="h-11 flex-1 uppercase sm:h-10"
                 />
                 <button
                   type="button"
@@ -446,13 +477,15 @@ export function ScheduleWidget() {
           </div>
         )}
 
-        {/* ── Navigation ────────────────────────────────────────────────── */}
-        <div className="mt-6 flex items-center gap-3">
+        {/* ── Navigation ──────────────────────────────────────────────────
+            Full-width primary on mobile (thumb-reachable, unambiguous), inline
+            right-aligned from sm up. Back is a 44px target, not a bare link. */}
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
           {step > 1 && (
             <button
               type="button"
-              onClick={() => setStep(step - 1)}
-              className="inline-flex items-center gap-1.5 text-sm font-bold text-ink transition-colors hover:text-flame"
+              onClick={() => goToStep(step - 1)}
+              className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-bold text-ink transition-colors hover:text-flame sm:justify-start"
             >
               <ArrowLeft className="h-4 w-4" />
               Back
@@ -461,9 +494,9 @@ export function ScheduleWidget() {
           {step < 3 ? (
             <button
               type="button"
-              onClick={() => setStep(step + 1)}
+              onClick={() => goToStep(step + 1)}
               disabled={step === 1 ? !step1Complete : !step2Complete}
-              className="btn-flame ml-auto text-base disabled:opacity-50"
+              className="btn-flame w-full text-base disabled:opacity-50 sm:ml-auto sm:w-auto"
             >
               Continue
               <ArrowRight className="h-5 w-5" />
@@ -473,7 +506,7 @@ export function ScheduleWidget() {
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="btn-flame ml-auto text-base disabled:opacity-50"
+              className="btn-flame w-full text-base disabled:opacity-50 sm:ml-auto sm:w-auto"
             >
               {submitting ? (
                 <>
