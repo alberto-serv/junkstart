@@ -3,7 +3,7 @@ import Image from "next/image"
 import {
   Check, Clock, ExternalLink, Recycle, ShieldCheck, Star, Truck,
 } from "lucide-react"
-import { LpHeader, AvailabilityRibbon, LpFooter } from "./lp-chrome"
+import { LpHeader, LpFooter } from "./lp-chrome"
 import { ScheduleWidget } from "./schedule-widget"
 import { Faq } from "./faq"
 import { HeroCta, StickyBookBar } from "./cta"
@@ -36,12 +36,6 @@ export const metadata: Metadata = {
       and must peek above the fold — that peek is the scroll cue and the reason
       the page converts. Nothing decorative goes between the H1 and the module.
    ============================================================ */
-
-const HOW_IT_WORKS = [
-  { title: "Pick a window", copy: "Choose a day and arrival window. Takes about two minutes." },
-  { title: "We show up", copy: "A uniformed crew texts you when they're 30 minutes out." },
-  { title: "You approve the price", copy: "Quoted on site before anything goes on the truck." },
-]
 
 const WHY = [
   { icon: Clock, title: "Same-week windows", copy: `Most ${loc.city} pickups land within two to three days, with same-day slots when a route has room.` },
@@ -77,7 +71,6 @@ export default function OmahaJunkRemovalPage() {
     // Bottom padding clears the fixed mobile bar; removed once it's hidden.
     <div className="min-h-screen overflow-x-hidden bg-white pb-[92px] lg:pb-0">
       <LpHeader />
-      <AvailabilityRibbon />
 
       {/* ── Hero + booking module ────────────────────────────────────────
           Desktop: copy left, module in a sticky right rail.
@@ -87,16 +80,14 @@ export default function OmahaJunkRemovalPage() {
         {/* `min-w-0` on both columns: grid items default to a min-content
             minimum, so any wide descendant (the module's date strip) would
             stretch the track past the viewport instead of scrolling inside it. */}
-        <div className={`${WRAP} grid grid-cols-1 items-start gap-8 pb-8 pt-7 md:pb-12 md:pt-10 lg:grid-cols-[minmax(0,1fr)_468px] lg:gap-12 lg:pb-14 lg:pt-12`}>
-          <div className="min-w-0 text-white lg:pt-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-[0.09em] text-white sm:px-3.5 sm:text-[11.5px]">
-              <Truck className="h-3.5 w-3.5" />
-              Serving {loc.city} &amp; the metro
-            </span>
-
+        {/* `lg:items-center` matters: the module is much the taller column, so
+            top-aligning the copy left a dead blue slab under it. Centring
+            distributes that space above and below the copy instead. */}
+        <div className={`${WRAP} grid grid-cols-1 items-start gap-8 pb-8 pt-7 md:pb-12 md:pt-10 lg:grid-cols-[minmax(0,1fr)_468px] lg:items-center lg:gap-12 lg:pb-14 lg:pt-12`}>
+          <div className="min-w-0 text-white">
             {/* Capped well below the old 54px: at full width this headline ran
                 to three lines, which pushed the module off a laptop fold. */}
-            <h1 className="mt-3.5 text-[clamp(27px,4.3vw,44px)] font-extrabold leading-[1.08] tracking-[-0.02em] text-white">
+            <h1 className="text-[clamp(27px,4.3vw,44px)] font-extrabold leading-[1.08] tracking-[-0.02em] text-white">
               Junk Removal in {loc.city}, Booked in Two Minutes
             </h1>
 
@@ -123,21 +114,6 @@ export default function OmahaJunkRemovalPage() {
             </div>
 
             <HeroCta />
-
-            {/* Desktop only. The module is the taller column, so without this the
-                copy column bottoms out early and leaves a dead blue slab beside
-                it. Three short steps earn that space instead of padding it. */}
-            <ol className="mt-9 hidden gap-6 border-t border-white/15 pt-7 lg:grid lg:grid-cols-3">
-              {HOW_IT_WORKS.map((s, i) => (
-                <li key={s.title}>
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-[12.5px] font-extrabold text-flame ring-1 ring-white/20">
-                    {i + 1}
-                  </span>
-                  <p className="mt-2.5 text-[14.5px] font-bold text-white">{s.title}</p>
-                  <p className="mt-1 text-[13px] leading-snug text-[#bed3f7]">{s.copy}</p>
-                </li>
-              ))}
-            </ol>
           </div>
 
           {/* Module — untouched in content; sticky on desktop only. */}

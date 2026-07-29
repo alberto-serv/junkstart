@@ -83,30 +83,6 @@ export function LpHeader() {
   )
 }
 
-/* ── Availability ribbon ──────────────────────────────────────────────────── */
-
-export function AvailabilityRibbon() {
-  return (
-    <div className="border-b border-line-soft bg-brand">
-      <div className={`${WRAP} flex flex-wrap items-center justify-center gap-x-3 gap-y-1 py-2.5 text-center text-[12.5px] text-white/90`}>
-        <span className="inline-flex items-center gap-2 font-bold uppercase tracking-[0.06em] text-white">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-flame opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-flame" />
-          </span>
-          {loc.nextSlot}
-        </span>
-        <span className="opacity-40">·</span>
-        <span>Same-day &amp; next-day pickups, {loc.hours}</span>
-        <span className="hidden opacity-40 sm:inline">·</span>
-        <a href={PHONE_TEL} className="hidden font-bold text-white underline-offset-4 hover:underline sm:inline">
-          {PHONE}
-        </a>
-      </div>
-    </div>
-  )
-}
-
 /* ── Footer ───────────────────────────────────────────────────────────────── */
 
 export function LpFooter() {

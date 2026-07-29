@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { ArrowRight, CalendarDays, Phone } from "lucide-react"
+import { CalendarDays, Phone } from "lucide-react"
 import { PHONE, PHONE_TEL } from "@/lib/junk-data"
 import { BOOKING_ID, brand, loc, scrollToBooking } from "./config"
 
@@ -19,7 +19,6 @@ export function HeroCta({ variant = "dark" }: { variant?: "dark" | "light" }) {
       >
         {brand.ctaLabel}
         <span className="text-[13.5px] font-semibold opacity-75">· {loc.nextSlot}</span>
-        <ArrowRight className="h-5 w-5" />
       </button>
     </div>
   )

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  ArrowLeft, ArrowRight, CalendarDays, Check, ChevronLeft, ChevronRight,
+  CalendarDays, Check, ChevronLeft, ChevronRight,
   Home, Building2, MapPin, Tag, Loader2,
 } from "lucide-react"
 import { PHONE, PHONE_TEL } from "@/lib/junk-data"
@@ -500,7 +500,6 @@ export function ScheduleWidget() {
               onClick={() => goToStep(step - 1)}
               className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-bold text-ink transition-colors hover:text-flame sm:justify-start"
             >
-              <ArrowLeft className="h-4 w-4" />
               Back
             </button>
           )}
@@ -512,7 +511,6 @@ export function ScheduleWidget() {
               className="btn-flame w-full text-base disabled:opacity-50 sm:ml-auto sm:w-auto"
             >
               Continue
-              <ArrowRight className="h-5 w-5" />
             </button>
           ) : (
             <button
@@ -527,10 +525,7 @@ export function ScheduleWidget() {
                   Booking…
                 </>
               ) : (
-                <>
-                  Confirm My Pickup
-                  <ArrowRight className="h-5 w-5" />
-                </>
+                "Confirm My Pickup"
               )}
             </button>
           )}
