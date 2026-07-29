@@ -50,22 +50,6 @@ export function LpHeader() {
           {loc.city}, {loc.state}
         </span>
 
-        <a
-          href={PHONE_TEL}
-          aria-label={`Call ${PHONE}`}
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line text-ink transition-colors hover:border-flame hover:text-flame sm:hidden"
-        >
-          <Phone className="h-4 w-4" />
-        </a>
-
-        <a
-          href={PHONE_TEL}
-          className="hidden items-center gap-1.5 text-[13.5px] font-bold text-ink transition-colors hover:text-flame sm:inline-flex"
-        >
-          <Phone className="h-3.5 w-3.5 text-flame" />
-          {PHONE}
-        </a>
-
         {/* Collapses to zero width when hidden so it never nudges the row. */}
         <button
           type="button"
