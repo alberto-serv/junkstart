@@ -80,11 +80,13 @@ export default function OmahaJunkRemovalPage() {
         {/* `min-w-0` on both columns: grid items default to a min-content
             minimum, so any wide descendant (the module's date strip) would
             stretch the track past the viewport instead of scrolling inside it. */}
-        {/* `lg:items-center` matters: the module is much the taller column, so
-            top-aligning the copy left a dead blue slab under it. Centring
-            distributes that space above and below the copy instead. */}
-        <div className={`${WRAP} grid grid-cols-1 items-start gap-8 pb-8 pt-7 md:pb-12 md:pt-10 lg:grid-cols-[minmax(0,1fr)_468px] lg:items-center lg:gap-12 lg:pb-14 lg:pt-12`}>
-          <div className="min-w-0 text-white">
+        {/* Columns are top-aligned, NOT centred. The module's height swings by
+            ~340px between steps (step 2 has the most fields), and centring made
+            the copy column slide up and down by up to 138px on every step
+            change — the page visibly jumped under the cursor. Top-aligning
+            pins the copy so only the band's bottom edge moves. */}
+        <div className={`${WRAP} grid grid-cols-1 items-start gap-8 pb-8 pt-7 md:pb-12 md:pt-10 lg:grid-cols-[minmax(0,1fr)_468px] lg:gap-12 lg:pb-14 lg:pt-12`}>
+          <div className="min-w-0 text-white lg:pt-6">
             {/* Capped well below the old 54px: at full width this headline ran
                 to three lines, which pushed the module off a laptop fold. */}
             <h1 className="text-[clamp(27px,4.3vw,44px)] font-extrabold leading-[1.08] tracking-[-0.02em] text-white">
@@ -116,8 +118,11 @@ export default function OmahaJunkRemovalPage() {
             <HeroCta />
           </div>
 
-          {/* Module — untouched in content; sticky on desktop only. */}
-          <div id={BOOKING_ID} className="min-w-0 scroll-mt-[72px] lg:sticky lg:top-[76px]">
+          {/* Not sticky: the module is always the taller of the two columns, so
+              its grid area exactly equals its own height and sticky had zero
+              travel to work with — it did nothing except complicate the
+              reflow when the step height changed. */}
+          <div id={BOOKING_ID} className="min-w-0 scroll-mt-[72px]">
             <ScheduleWidget />
           </div>
         </div>

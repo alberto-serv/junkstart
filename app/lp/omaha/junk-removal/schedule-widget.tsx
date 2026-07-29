@@ -97,9 +97,14 @@ export function ScheduleWidget() {
    * customer is left staring at whatever was mid-viewport, usually the middle of
    * the previous step's fields. Pull the module's header back to the top on
    * every step change so each step starts where the eye already is.
+   *
+   * Mobile only. On desktop the module sits in the hero beside the copy and is
+   * already fully in view, so scrolling the page on every Continue/Back was
+   * pure motion — the form appeared to jump away under the cursor.
    */
   const goToStep = useCallback((next: number) => {
     setStep(next)
+    if (window.matchMedia("(min-width: 1024px)").matches) return
     const el = rootRef.current
     if (!el) return
     const top = el.getBoundingClientRect().top + window.scrollY - 72
@@ -308,9 +313,16 @@ export function ScheduleWidget() {
                   )
                 })}
               </div>
-              {!selectedDate && (
-                <p className="mt-2 text-xs text-muted-foreground">Choose a day to see available windows.</p>
-              )}
+              {/* Always rendered, only faded — removing it on the first date
+                  click collapsed 20px and shunted the whole card upward. */}
+              <p
+                className={`mt-2 h-4 text-xs text-muted-foreground transition-opacity ${
+                  selectedDate ? "opacity-0" : "opacity-100"
+                }`}
+                aria-hidden={Boolean(selectedDate)}
+              >
+                Choose a day to see available windows.
+              </p>
             </div>
           </div>
         )}
@@ -531,16 +543,13 @@ export function ScheduleWidget() {
           )}
         </div>
 
-        {step === 1 && !step1Complete && (
-          <p className="mt-3 text-center text-xs text-muted-foreground">
-            Choose a day and an arrival window to continue.
-          </p>
-        )}
-        {step === 2 && !step2Complete && (
-          <p className="mt-3 text-center text-xs text-muted-foreground">
-            Fill in your address, contact details, and what we&apos;re removing.
-          </p>
-        )}
+        {/* One always-present slot rather than two conditional paragraphs.
+            Mounting and unmounting these resized the card the moment the last
+            required field was filled, so the button moved as you reached it. */}
+        <p className="mt-3 min-h-4 text-center text-xs text-muted-foreground">
+          {step === 1 && !step1Complete && "Choose a day and an arrival window to continue."}
+          {step === 2 && !step2Complete && "Fill in your address, contact details, and what we're removing."}
+        </p>
       </div>
     </div>
   )
