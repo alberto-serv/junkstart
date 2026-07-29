@@ -1,17 +1,21 @@
 import {
-  Sofa,
-  WashingMachine,
-  Warehouse,
-  Home,
-  HardHat,
-  Trees,
-  Waves,
-  Tv,
-  Building2,
-  Package as PackageIcon,
-  Mountain,
+  Bed,
   Bike,
+  Boxes,
+  Building2,
+  Container,
+  HardHat,
   HelpCircle,
+  Home,
+  Mountain,
+  Package as PackageIcon,
+  Sofa,
+  Trees,
+  Truck,
+  Tv,
+  Warehouse,
+  WashingMachine,
+  Waves,
   type LucideIcon,
 } from "lucide-react"
 
@@ -21,28 +25,299 @@ export const PHONE = "(888) 586-5782"
 export const PHONE_TEL = "tel:8885865782"
 export const SERVICE_CITY = "Charlotte, NC"
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+/** Where aggregate-load photos go, per the aggregates route below. */
+export const AGGREGATES_EMAIL = "info@junkstart.com"
 
-/** How often we come out. Most junk removal is one-time; recurring hauling is a
- *  real commercial product (property managers, retail, restaurants). */
-export type FrequencyType = "one-time" | "monthly" | "2x-month" | "weekly"
-
-/** Who does the loading. Curbside is cheaper — the crew never leaves the truck. */
-export type ServiceLevelType = "full-service" | "curbside"
-
-export const SERVICE_LEVEL_LABELS: Record<ServiceLevelType, string> = {
-  "full-service": "Full-Service Loading",
-  curbside: "Curbside Pickup",
-}
-
-/** How hard the haul-out is. Drives the labor side of the price. */
-export type AccessType = "easy" | "standard" | "hard"
+// ─── 1. Market configuration ─────────────────────────────────────────────────
 
 /**
- * Pricing archetypes. Every job type maps to one of these, which drives its
- * per-cubic-yard rate band, the copy on the access step, and what's included.
- * New job types reuse an existing profile (optionally scaled with
- * `priceMultiplier`) instead of requiring hand-written config for each one.
+ * Per-market pricing. This is the whole pitch in one object.
+ *
+ * It mirrors the fill-in-the-blank box on the JunkStart franchise cheat sheet:
+ * an owner fills in their trip fee, their per-pound rate, their minimum and any
+ * surcharges, and the estimator prices their market correctly without a line of
+ * code changing. Weights are national, prices are local.
+ *
+ * In production this resolves from the customer's ZIP via ServiceMinder, which
+ * owns territory-to-franchise mapping, so a single deployment quotes every
+ * market from that market's own numbers. The constant below is the Charlotte
+ * card, standing in until that lookup is wired up.
+ *
+ * JunkStart prices by weight, not volume: every truck carries a certified
+ * onboard scale, the load is weighed on site, and the customer sees the same
+ * number the scale does.
+ */
+export interface MarketConfig {
+  /** Display name for the market, e.g. "Charlotte, NC". */
+  marketName: string
+  /** Flat trip fee, added to every job. */
+  pickupFee: number
+  /** Dollars per pound. */
+  perLbRate: number
+  /** Jobs at or under `upToLbs` quote `flatPrice`, replacing the per-pound math. */
+  minimum?: { upToLbs: number; flatPrice: number }
+  /** At or above `atLbs`, the discounted rate applies to the WHOLE ticket. */
+  volumeDiscount?: { atLbs: number; perLbRate: number }
+  /** Per mattress, if this market charges one. */
+  mattressSurcharge?: number
+  /** Per tire, if this market charges one. */
+  tireSurcharge?: number
+}
+
+export const MARKET: MarketConfig = {
+  marketName: "Charlotte, NC",
+  pickupFee: 89,
+  perLbRate: 0.55,
+  minimum: { upToLbs: 150, flatPrice: 139 },
+  volumeDiscount: { atLbs: 1000, perLbRate: 0.45 },
+  mattressSurcharge: 20,
+  tireSurcharge: 10,
+}
+
+// ─── 2. On-site threshold ────────────────────────────────────────────────────
+
+/**
+ * At or above this estimated weight we stop quoting online. Loads this size
+ * vary too much to price from a description, so the flow routes to a free
+ * on-site estimate instead of guessing high and losing the job.
+ */
+export const ON_SITE_THRESHOLD_LBS = 1500
+
+// ─── 3. Scenario cards ───────────────────────────────────────────────────────
+
+/**
+ * The one question the estimator asks. These come verbatim from the cheat
+ * sheet's "what the customer says, what it weighs" translation table, which
+ * exists because nobody knows what their junk weighs but everybody can point at
+ * the pile that looks like theirs.
+ *
+ * The weights are national. Only the prices in MarketConfig vary by market.
+ */
+export type ScenarioId =
+  | "few-items"
+  | "pickup-bed"
+  | "bedroom"
+  | "living-room"
+  | "half-garage"
+  | "packed-garage"
+  | "storage-unit"
+  | "whole-property"
+
+export interface Scenario {
+  id: ScenarioId
+  /** Customer language, not ours. */
+  label: string
+  detail: string
+  icon: LucideIcon
+  lowLbs: number
+  highLbs: number
+  /** No instant quote at any price. Books an on-site estimate. */
+  onSiteOnly?: boolean
+}
+
+export const SCENARIOS: Scenario[] = [
+  { id: "few-items", label: "A few items", detail: "One car trip's worth", icon: PackageIcon, lowLbs: 50, highLbs: 150 },
+  { id: "pickup-bed", label: "A pickup bed's worth", detail: "Level full, one bed", icon: Truck, lowLbs: 200, highLbs: 400 },
+  { id: "bedroom", label: "A furnished bedroom", detail: "Bed set, dresser, the works", icon: Bed, lowLbs: 600, highLbs: 1000 },
+  { id: "living-room", label: "A furnished living room", detail: "Sofas, tables, electronics", icon: Sofa, lowLbs: 800, highLbs: 1300 },
+  { id: "half-garage", label: "Half a garage", detail: "Single car garage, half full", icon: Warehouse, lowLbs: 500, highLbs: 900 },
+  { id: "packed-garage", label: "A packed garage", detail: "Single car, floor to ceiling", icon: Boxes, lowLbs: 1000, highLbs: 1800 },
+  { id: "storage-unit", label: "A storage unit", detail: "5x10 or 10x10, packed", icon: Container, lowLbs: 700, highLbs: 2400 },
+  { id: "whole-property", label: "A whole house or worse", detail: "Estate, hoarding, post-construction", icon: Home, lowLbs: 1500, highLbs: 0, onSiteOnly: true },
+]
+
+// ─── 4. Flags ────────────────────────────────────────────────────────────────
+
+/**
+ * The checkbox row under the scenario picker. Two jobs: apply the per-item
+ * surcharges this market charges, and catch the aggregates trap before it
+ * produces a quote that is wrong by a factor of five.
+ */
+export interface QuoteFlags {
+  /** 0 to 4 in the UI. */
+  mattressCount: number
+  /** 0 to 8 in the UI. */
+  tireCount: number
+  /** Dirt, concrete, rock, tile, brick. */
+  hasAggregates: boolean
+}
+
+export const NO_FLAGS: QuoteFlags = { mattressCount: 0, tireCount: 0, hasAggregates: false }
+
+/**
+ * Shown the moment the aggregates box is ticked. Aggregates break every
+ * household weight estimate on the page, so we say so plainly and hand over a
+ * route rather than quoting a number we would have to walk back on site.
+ */
+export const AGGREGATES_WARNING = `Dirt, concrete, rock, tile and brick weigh far more than household junk. One pickup bed of dirt alone runs 2,000 lbs or more, and concrete 2,500 to 3,500 lbs, so the estimates above do not apply to your load. Send photos to ${AGGREGATES_EMAIL} or book a free on-site look and we'll price it from what's actually there.`
+
+// ─── 5. Item weights ─────────────────────────────────────────────────────────
+
+/**
+ * The fallback for customers who would rather list exactly what they have than
+ * pick the pile that looks closest. Bands are from the cheat sheet's item
+ * weight table.
+ */
+export interface ItemWeight {
+  id: string
+  name: string
+  lowLbs: number
+  highLbs: number
+}
+
+export const ITEM_WEIGHTS: ItemWeight[] = [
+  { id: "sofa", name: "Sofa or couch", lowLbs: 100, highLbs: 150 },
+  { id: "sectional-per-piece", name: "Sectional, per piece", lowLbs: 50, highLbs: 50 },
+  { id: "recliner", name: "Recliner or armchair", lowLbs: 60, highLbs: 80 },
+  { id: "mattress-set", name: "Mattress and box spring", lowLbs: 100, highLbs: 175 },
+  { id: "dresser", name: "Dresser or cabinet", lowLbs: 60, highLbs: 100 },
+  { id: "dining-table-chairs", name: "Dining table and chairs", lowLbs: 130, highLbs: 150 },
+  { id: "desk", name: "Desk", lowLbs: 100, highLbs: 200 },
+  { id: "bookcase", name: "Bookcase or shelving", lowLbs: 60, highLbs: 100 },
+  { id: "fridge-stove-dw", name: "Fridge, stove or dishwasher", lowLbs: 150, highLbs: 200 },
+  { id: "washer-or-dryer", name: "Washer or dryer", lowLbs: 100, highLbs: 200 },
+  { id: "tv", name: "TV or monitor", lowLbs: 50, highLbs: 100 },
+  { id: "treadmill", name: "Treadmill", lowLbs: 150, highLbs: 300 },
+  { id: "exercise-machine", name: "Exercise machine or weight set", lowLbs: 200, highLbs: 500 },
+  { id: "carpet-per-room", name: "Carpet, one room", lowLbs: 60, highLbs: 120 },
+  { id: "contractor-bag", name: "Contractor bag", lowLbs: 60, highLbs: 100 },
+  { id: "kitchen-bag", name: "Kitchen trash bag", lowLbs: 20, highLbs: 30 },
+]
+
+/** Sum an item tally into a low/high pound band. */
+export function lbsFromItems(counts: Record<string, number>): { lowLbs: number; highLbs: number } {
+  return ITEM_WEIGHTS.reduce(
+    (sum, item) => {
+      const n = counts[item.id] ?? 0
+      if (n <= 0) return sum
+      return {
+        lowLbs: sum.lowLbs + item.lowLbs * n,
+        highLbs: sum.highLbs + item.highLbs * n,
+      }
+    },
+    { lowLbs: 0, highLbs: 0 },
+  )
+}
+
+// ─── Pricing helpers ─────────────────────────────────────────────────────────
+
+export function roundNice(n: number): number {
+  if (n <= 50) return Math.round(n / 5) * 5
+  return Math.round(n / 5) * 5
+}
+
+export function rangeStr(low: number, high: number): string {
+  if (low === high) return low.toLocaleString()
+  return `${low.toLocaleString()} – $${high.toLocaleString()}`
+}
+
+// ─── 6. The pricing entry point ──────────────────────────────────────────────
+
+export interface Quote {
+  lowLbs: number
+  highLbs: number
+  low: number
+  high: number
+  /** Mattress and tire total. Already included in `low` and `high`. */
+  surcharges: number
+  /** The market minimum set the low end instead of the per-pound math. */
+  minApplied: boolean
+  /** The volume discount rate was used, on the whole ticket. */
+  discountApplied: boolean
+  /** Too big, or too unpredictable, to quote online. */
+  onSiteRequired: boolean
+}
+
+/**
+ * The single pricing entry point. The estimator, the checkout summary and the
+ * confirmation receipt all read from this, so a market's numbers are applied in
+ * exactly one place.
+ *
+ * Follows the cheat sheet's "how to build a quote" steps in order.
+ */
+export function getQuote(
+  lowLbs: number,
+  highLbs: number,
+  flags: QuoteFlags,
+  market: MarketConfig = MARKET,
+): Quote {
+  // (a) Anything we cannot honestly price from a description goes on site.
+  // Aggregates break the weight bands outright; the XL scenario carries a low
+  // bound and no high bound, which is its way of saying "unbounded".
+  const onSiteRequired =
+    flags.hasAggregates ||
+    highLbs >= ON_SITE_THRESHOLD_LBS ||
+    (lowLbs >= ON_SITE_THRESHOLD_LBS && highLbs === 0)
+
+  if (onSiteRequired) {
+    return {
+      lowLbs,
+      highLbs,
+      low: 0,
+      high: 0,
+      surcharges: 0,
+      minApplied: false,
+      discountApplied: false,
+      onSiteRequired: true,
+    }
+  }
+
+  // (b) The discount rate is not marginal. Cross the threshold and the cheaper
+  // rate reprices the whole ticket. Each bound is evaluated on its own weight,
+  // so a band can straddle the threshold.
+  const rateFor = (lbs: number) =>
+    market.volumeDiscount && lbs >= market.volumeDiscount.atLbs
+      ? market.volumeDiscount.perLbRate
+      : market.perLbRate
+
+  // (c) + (d) Trip fee plus weight, unless the job is small enough to fall
+  // under the market minimum, in which case the flat minimum IS the price. Note
+  // that it replaces the per-pound math rather than acting as a floor under it.
+  const priceFor = (lbs: number) => {
+    if (market.minimum && lbs <= market.minimum.upToLbs) {
+      return { price: market.minimum.flatPrice, floored: true, discounted: false }
+    }
+    const rate = rateFor(lbs)
+    return {
+      price: market.pickupFee + lbs * rate,
+      floored: false,
+      discounted: Boolean(market.volumeDiscount) && rate !== market.perLbRate,
+    }
+  }
+
+  const lowSide = priceFor(lowLbs)
+  const highSide = priceFor(highLbs)
+
+  // (e) Surcharges ride on top of both bounds.
+  const surcharges =
+    flags.mattressCount * (market.mattressSurcharge ?? 0) +
+    flags.tireCount * (market.tireSurcharge ?? 0)
+
+  // (f)
+  return {
+    lowLbs,
+    highLbs,
+    low: roundNice(lowSide.price + surcharges),
+    high: roundNice(highSide.price + surcharges),
+    surcharges,
+    minApplied: lowSide.floored,
+    discountApplied: lowSide.discounted || highSide.discounted,
+    onSiteRequired: false,
+  }
+}
+
+// ─── Legacy (Omaha LP + contact form only, do not use in the estimator) ──────
+//
+// `app/lp/omaha/junk-removal/page.tsx` is intentionally frozen and still reads
+// JOBS (filtering on consultationOnly, rendering name/tagline/icon) and
+// TRUCK_CAPACITY. `app/contact/page.tsx` and `app/landing/industries.tsx` also
+// read JOBS. Everything that priced off these types is gone; what remains is a
+// label set. Nothing new in the estimator may import from this block.
+
+/**
+ * Pricing archetypes. Every job type maps to one of these, which drove its
+ * size buckets and rates under the old volume model. Retained only because
+ * `Job` declares the field.
  */
 export type ProfileId = "standard" | "light" | "heavy" | "commercial"
 
@@ -68,7 +343,7 @@ export interface Job {
   icon: LucideIcon
   image?: string
   profile: ProfileId
-  /** Scales the profile's per-yard rate for this job type. Defaults to 1. */
+  /** Scaled the profile's per-yard rate under the old volume model. Unused. */
   priceMultiplier?: number
   /** Featured types show in the grid by default; the rest sit behind "show more". */
   featured: boolean
@@ -76,8 +351,6 @@ export interface Job {
   consultationOnly?: boolean
   tagline: string
 }
-
-// ─── Job types (single source of truth) ──────────────────────────────────────
 
 export const JOBS: Job[] = [
   // ── Featured (shown by default) ──
@@ -98,346 +371,5 @@ export const JOBS: Job[] = [
   { id: "other", name: "Something Else", shortName: "Other", icon: HelpCircle, profile: "standard", featured: false, consultationOnly: true, tagline: "Tell us what you've got" },
 ]
 
-export const FEATURED_JOBS: Job[] = JOBS.filter((j) => j.featured)
-export const MORE_JOBS: Job[] = JOBS.filter((j) => !j.featured)
-
-export function getJob(id: JobId): Job {
-  return JOBS.find((j) => j.id === id) ?? JOBS[0]
-}
-
-export function isJobId(value: string | null | undefined): value is JobId {
-  return !!value && JOBS.some((j) => j.id === value)
-}
-
-// ─── Load volume ─────────────────────────────────────────────────────────────
-//
-// Junk removal prices on volume, not weight or time: how much of the truck your
-// pile fills. A JunkStart truck holds 16 cubic yards, so the customer dials in
-// cubic yards and we present it back as the truck fraction they'd recognize
-// ("about ½ a truck"). Anything past a full truck is a multi-load job and routes
-// to a custom quote.
-
-export const TRUCK_CAPACITY = 16 // cubic yards in one JunkStart truck
-export const LOAD_MIN = 1
-export const LOAD_MAX = TRUCK_CAPACITY
-export const LOAD_STEP = 1
-
-/** Truck-fill fractions, used for the slider ticks and the plain-English label. */
-const TRUCK_FRACTIONS: { yards: number; label: string }[] = [
-  { yards: 1, label: "1 item" },
-  { yards: 2, label: "⅛ truck" },
-  { yards: 4, label: "¼ truck" },
-  { yards: 6, label: "⅜ truck" },
-  { yards: 8, label: "½ truck" },
-  { yards: 10, label: "⅝ truck" },
-  { yards: 12, label: "¾ truck" },
-  { yards: 14, label: "⅞ truck" },
-  { yards: 16, label: "Full truck" },
-]
-
-export const LOAD_TICKS = [4, 8, 12, 16]
-
-/** Nearest truck-fraction name for a cubic-yard value ("about ½ a truck"). */
-export function truckFractionLabel(yards: number): string {
-  if (yards > TRUCK_CAPACITY) return "More than a full truck"
-  return TRUCK_FRACTIONS.reduce((best, f) =>
-    Math.abs(f.yards - yards) < Math.abs(best.yards - yards) ? f : best,
-  ).label
-}
-
-export function loadSizeLabel(yards: number): string {
-  if (yards > TRUCK_CAPACITY) return `${TRUCK_CAPACITY}+ cu yd · multiple loads`
-  return `${yards} cu yd · ${truckFractionLabel(yards)}`
-}
-
-// ─── Item volume reference ───────────────────────────────────────────────────
-//
-// Customers do not think in cubic yards. The "add your items" helper on the size
-// step lets them tally what they actually have; we sum the volumes below and set
-// the slider for them. Figures are typical displaced volume, rounded generously
-// so the estimate errs high rather than low.
-
-export interface ItemVolume {
-  id: string
-  name: string
-  yards: number
-}
-
-export const ITEM_VOLUMES: ItemVolume[] = [
-  { id: "sofa", name: "Sofa / couch", yards: 2.5 },
-  { id: "chair", name: "Armchair / recliner", yards: 1.5 },
-  { id: "mattress", name: "Mattress + box spring", yards: 1.5 },
-  { id: "dresser", name: "Dresser / cabinet", yards: 1.5 },
-  { id: "table", name: "Table & chairs", yards: 2.5 },
-  { id: "appliance", name: "Large appliance", yards: 1.5 },
-  { id: "tv", name: "TV / electronics", yards: 0.5 },
-  { id: "exercise", name: "Exercise equipment", yards: 2 },
-  { id: "carpet", name: "Carpet (one room)", yards: 1.5 },
-  { id: "boxes", name: "Boxes / bags (each)", yards: 0.2 },
-  { id: "yardbag", name: "Yard waste pile (per truck bed)", yards: 2.5 },
-  { id: "hottub", name: "Hot tub", yards: 8 },
-]
-
-/** Sum an item tally into cubic yards, snapped to the slider's step and clamped
- *  one step past the cap so an oversized tally still routes to consultation. */
-export function yardsFromItems(counts: Record<string, number>): number {
-  const raw = ITEM_VOLUMES.reduce((sum, item) => sum + item.yards * (counts[item.id] ?? 0), 0)
-  const snapped = Math.ceil(raw / LOAD_STEP) * LOAD_STEP
-  return Math.min(Math.max(snapped, LOAD_MIN), LOAD_MAX + LOAD_STEP)
-}
-
-// ─── Pricing model ───────────────────────────────────────────────────────────
-//
-// The price is a dispatch fee plus volume:
-//   per-pickup = BASE_FEE + (cubic yards × per-yard rate)
-// scaled by how hard the haul-out is (access) and who does the loading (service
-// level), then floored at the minimum pickup price. Each profile carries TWO
-// per-yard rates — a clean, well-sorted load and a mixed, awkward one — which
-// give the low and high ends of the range the UI shows.
-
-/** Truck roll + two-person crew dispatch, before any volume. */
-const BASE_FEE = 95
-
-/** No job leaves the yard for less than this, whatever the volume works out to. */
-const MINIMUM_PICKUP = 129
-
-/** [clean/sorted load → low end, mixed/awkward load → high end], $ per cubic yard. */
-const YARD_RATES: Record<ProfileId, [number, number]> = {
-  // Household mixed junk — furniture, appliances, cleanouts. The default band.
-  standard: [40, 52],
-  // Bulky but light and single-stream: brush, sod, cardboard. Cheaper to tip.
-  light: [26, 36],
-  // Office and retail: standard material, but more staging, elevators and COIs.
-  commercial: [44, 58],
-  // Concrete, dirt, roofing. Landfill charges by weight here, not volume.
-  heavy: [78, 105],
-}
-
-/** Labor multiplier for how hard it is to get the material to the truck. */
-const ACCESS_MULTIPLIERS: Record<AccessType, number> = {
-  easy: 0.9,
-  standard: 1.0,
-  hard: 1.3,
-}
-
-/** Curbside piles are already staged — the crew only loads and hauls. */
-const SERVICE_LEVEL_MULTIPLIERS: Record<ServiceLevelType, number> = {
-  "full-service": 1.0,
-  curbside: 0.85,
-}
-
-// ─── Access (how hard the haul-out is) ───────────────────────────────────────
-
-type AccessCopy = Record<AccessType, { label: string; copy: string; cues: string[] }>
-
-/** Base copy per pricing profile. Job types that share a profile but read oddly
- *  with its generic wording get a tailored override in ACCESS_OVERRIDES below. */
-const ACCESS_OPTIONS: Record<ProfileId, AccessCopy> = {
-  standard: {
-    easy: { label: "Curb or Driveway", copy: "It's already outside and ready to load", cues: ["Nothing to carry out", "Truck parks right at the pile"] },
-    standard: { label: "Ground Floor", copy: "Inside, but a straight carry to the truck", cues: ["No stairs", "Doorways clear"] },
-    hard: { label: "Stairs or Tight Access", copy: "Upper floor, basement, or a long carry", cues: ["Stairs or elevator", "Narrow halls or heavy pieces"] },
-  },
-  light: {
-    easy: { label: "Piled at the Curb", copy: "Brush and debris already stacked roadside", cues: ["Ready to load on arrival"] },
-    standard: { label: "Open Yard", copy: "Spread across an accessible yard", cues: ["Truck can back near the pile"] },
-    hard: { label: "Back Yard or Slope", copy: "Behind a gate, uphill, or a long haul out", cues: ["Wheelbarrow distance", "Gates or grade changes"] },
-  },
-  heavy: {
-    easy: { label: "Curb or Driveway", copy: "Debris staged where the truck parks", cues: ["Direct load, no carry"] },
-    standard: { label: "Ground Level", copy: "Inside or out back, on one level", cues: ["Flat, short carry"] },
-    hard: { label: "Stairs or Confined Space", copy: "Basement, upper floor, or tight jobsite", cues: ["Buckets and hand-carry", "Limited truck access"] },
-  },
-  commercial: {
-    easy: { label: "Dock or Loading Zone", copy: "Staged at a dock or curbside dumpster pad", cues: ["Direct load from the pallet or pile"] },
-    standard: { label: "Ground Floor Suite", copy: "Street-level space with a clear path out", cues: ["No elevator needed"] },
-    hard: { label: "Upper Floor or Restricted", copy: "Elevator, freight schedule, or after-hours only", cues: ["COI and building rules", "Elevator or stair carry"] },
-  },
-}
-
-/** Per-job copy for the types whose shared profile wording doesn't fit. */
-const ACCESS_OVERRIDES: Partial<Record<JobId, AccessCopy>> = {
-  appliances: {
-    easy: { label: "Curb or Garage", copy: "Already disconnected and moved outside", cues: ["Unplugged and drained"] },
-    standard: { label: "Kitchen or Laundry", copy: "In place on the ground floor, ready to pull", cues: ["Straight path to the door"] },
-    hard: { label: "Basement or Upstairs", copy: "Down a flight, up a flight, or a tight galley", cues: ["Stair carry", "Doors narrower than the unit"] },
-  },
-  estate: {
-    easy: { label: "Staged & Sorted", copy: "Everything's already pulled to the garage or curb", cues: ["Keep-items separated"] },
-    standard: { label: "Room by Room", copy: "A single-level home we clear as we go", cues: ["Normal carry distance"] },
-    hard: { label: "Multi-Level or Packed", copy: "Two-plus stories, attic, or heavily filled rooms", cues: ["Stairs on every trip", "Paths need clearing first"] },
-  },
-  hottub: {
-    easy: { label: "Open Access", copy: "Wide gate or driveway right up to the tub", cues: ["Room to work around it"] },
-    standard: { label: "Standard Back Yard", copy: "Through a gate with a normal carry out", cues: ["Standard 3-foot gate"] },
-    hard: { label: "Deck or Enclosed", copy: "Built into a deck, or crane/fence removal needed", cues: ["Cut down in place", "No side-yard access"] },
-  },
-  storage: {
-    easy: { label: "Drive-Up Unit", copy: "Roll-up door the truck can back to", cues: ["Load straight from the unit"] },
-    standard: { label: "Interior Unit", copy: "Indoor hallway with cart access", cues: ["Short cart run"] },
-    hard: { label: "Upper Floor Unit", copy: "Elevator run, or a packed floor-to-ceiling unit", cues: ["Elevator queue", "Unit packed tight"] },
-  },
-  office: {
-    easy: { label: "Dock or Loading Zone", copy: "Staged at a dock we can back into", cues: ["Direct load"] },
-    standard: { label: "Ground Floor Suite", copy: "Street-level office with a clear path out", cues: ["No elevator needed"] },
-    hard: { label: "Upper Floor or After-Hours", copy: "Freight elevator, COI, or off-hours window", cues: ["Building rules apply", "Elevator scheduling"] },
-  },
-}
-
-export function accessOptionsFor(id: JobId): AccessCopy {
-  return ACCESS_OVERRIDES[id] ?? ACCESS_OPTIONS[getJob(id).profile]
-}
-
-// ─── What's included ─────────────────────────────────────────────────────────
-
-export interface ServiceSpec {
-  name: string
-  subtitle: string
-  features: string[]
-}
-
-const SERVICE_SPECS: Record<ProfileId, ServiceSpec> = {
-  standard: {
-    name: "Full-Service Junk Removal",
-    subtitle: "We load it, haul it, and sweep up after",
-    features: [
-      "Two-person uniformed crew",
-      "All lifting, carrying and loading",
-      "Broom-clean sweep of the space",
-      "Donation and recycling routing",
-      "Disposal fees included in your price",
-    ],
-  },
-  light: {
-    name: "Yard Debris Hauling",
-    subtitle: "Brush and green waste cleared and composted",
-    features: [
-      "Two-person uniformed crew",
-      "Brush, branches, sod and clippings",
-      "Rake-down of the work area",
-      "Routed to green-waste composting",
-      "Tipping fees included in your price",
-    ],
-  },
-  heavy: {
-    name: "Heavy Debris Hauling",
-    subtitle: "Dense material handled with the right equipment",
-    features: [
-      "Crew sized to the material",
-      "Concrete, brick, tile, soil and roofing",
-      "Jobsite sweep on completion",
-      "Routed to a C&D recycling facility",
-      "Weight-based tipping fees included",
-    ],
-  },
-  commercial: {
-    name: "Commercial Cleanout",
-    subtitle: "Scheduled around your business hours",
-    features: [
-      "Crew sized to the job",
-      "Desks, cubicles, fixtures and e-waste",
-      "Certificate of insurance on request",
-      "After-hours and weekend windows",
-      "Certified data-device destruction available",
-    ],
-  },
-}
-
-export function serviceSpecFor(id: JobId): ServiceSpec {
-  return SERVICE_SPECS[getJob(id).profile]
-}
-
-// ─── Frequency ───────────────────────────────────────────────────────────────
-//
-// One-time is the default and by far the common case. Recurring hauling is for
-// property managers, retail and restaurants; the per-pickup discount reflects the
-// routed, predictable stop.
-
-export const FREQUENCY_CONFIG: Record<
-  FrequencyType,
-  { label: string; short: string; pickupsPerMonth: number; discount: number; recurring: boolean }
-> = {
-  "one-time": { label: "One-Time Pickup", short: "Once", pickupsPerMonth: 1, discount: 1.0, recurring: false },
-  monthly: { label: "Monthly", short: "1×/mo", pickupsPerMonth: 1, discount: 0.92, recurring: true },
-  "2x-month": { label: "Twice a Month", short: "2×/mo", pickupsPerMonth: 2, discount: 0.88, recurring: true },
-  weekly: { label: "Weekly", short: "Weekly", pickupsPerMonth: 4.33, discount: 0.82, recurring: true },
-}
-
-export const FREQUENCIES: FrequencyType[] = ["one-time", "monthly", "2x-month", "weekly"]
-export const RECURRING_FREQUENCIES: FrequencyType[] = ["monthly", "2x-month", "weekly"]
-
-// ─── Pricing helpers ─────────────────────────────────────────────────────────
-
-export function roundNice(n: number): number {
-  if (n <= 50) return Math.round(n / 5) * 5
-  return Math.round(n / 5) * 5
-}
-
-export function rangeStr(low: number, high: number): string {
-  if (low === high) return low.toLocaleString()
-  return `${low.toLocaleString()} – $${high.toLocaleString()}`
-}
-
-export interface Quote {
-  /** What a single pickup costs (the headline for one-time jobs). */
-  perPickup: number
-  perPickupLow: number
-  perPickupHigh: number
-  /** What the plan costs per month (only meaningful on recurring plans). */
-  monthly: number
-  monthlyLow: number
-  monthlyHigh: number
-  /** The minimum pickup price raised the low end above its computed value. */
-  minApplied: boolean
-  recurring: boolean
-}
-
-const ZERO_QUOTE: Quote = {
-  perPickup: 0, perPickupLow: 0, perPickupHigh: 0,
-  monthly: 0, monthlyLow: 0, monthlyHigh: 0,
-  minApplied: false, recurring: false,
-}
-
-/**
- * Price a pickup from its volume. This is the one pricing entry point — the
- * estimator, the checkout summary and the confirmation receipt all read from it.
- */
-export function getQuote(
-  id: JobId,
-  yards: number,
-  access: AccessType,
-  serviceLevel: ServiceLevelType,
-  frequency: FrequencyType,
-): Quote {
-  if (!yards || yards <= 0) return ZERO_QUOTE
-
-  const job = getJob(id)
-  const [cleanRate, mixedRate] = YARD_RATES[job.profile]
-  const freq = FREQUENCY_CONFIG[frequency]
-
-  const multiplier =
-    (job.priceMultiplier ?? 1) *
-    ACCESS_MULTIPLIERS[access] *
-    SERVICE_LEVEL_MULTIPLIERS[serviceLevel] *
-    freq.discount
-
-  const rawLow = (BASE_FEE + yards * cleanRate) * multiplier
-  const rawHigh = (BASE_FEE + yards * mixedRate) * multiplier
-
-  const perPickupLow = roundNice(Math.max(MINIMUM_PICKUP, rawLow))
-  const perPickupHigh = roundNice(Math.max(MINIMUM_PICKUP, rawHigh))
-  const perPickup = Math.round((perPickupLow + perPickupHigh) / 2)
-
-  const p = freq.pickupsPerMonth
-  return {
-    perPickup,
-    perPickupLow,
-    perPickupHigh,
-    monthly: Math.round(perPickup * p),
-    monthlyLow: Math.round(perPickupLow * p),
-    monthlyHigh: Math.round(perPickupHigh * p),
-    // The floor bit: the computed low end came in under the minimum pickup price.
-    minApplied: rawLow < MINIMUM_PICKUP,
-    recurring: freq.recurring,
-  }
-}
+/** Cubic yards in one JunkStart truck. Read by the Omaha LP and /cleanouts. */
+export const TRUCK_CAPACITY = 16
