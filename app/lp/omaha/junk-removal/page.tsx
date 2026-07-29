@@ -92,15 +92,15 @@ export default function OmahaJunkRemovalPage() {
             change — the page visibly jumped under the cursor. Top-aligning
             pins the copy so only the band's bottom edge moves. */}
         <div className={`${WRAP} grid grid-cols-1 items-start gap-8 pb-8 pt-7 md:pb-12 md:pt-10 lg:grid-cols-[minmax(0,1fr)_468px] lg:gap-12 lg:pb-14 lg:pt-12`}>
-          {/* Top-aligned to the module: no top padding, and `-mt-2` trims the
-              H1's internal leading (a 47.5px line box on a 44px face) so it's
-              the visible cap that meets the top edge of the module card rather
-              than the invisible text box.
-              The copy is not stretched to the module's full height on purpose.
-              It is ~340px of content against a 650px card, so spanning it either
-              leaves a hole in the middle of the copy or ties the step strip to
-              the module's height — and that height changes with every step. */}
-          <div className="min-w-0 text-white lg:-mt-2">
+          {/* Vertically centred against the module — but against a FIXED 647px
+              box, which is the module's height on its opening step, not against
+              the module's live height.
+              Centring on the live height (grid `items-center`) is what made this
+              column slide up to 138px every time a step changed, because the
+              module grows ~340px on step 2. Centring inside a constant means the
+              copy reads as centred on load and then never moves again. It sits
+              slightly high once the module grows, which is the cheaper trade. */}
+          <div className="min-w-0 text-white lg:flex lg:min-h-[647px] lg:flex-col lg:justify-center">
             {/* Capped well below the old 54px: at full width this headline ran
                 to three lines, which pushed the module off a laptop fold. */}
             <h1 className="text-[clamp(27px,4.3vw,44px)] font-extrabold leading-[1.08] tracking-[-0.02em] text-white">
