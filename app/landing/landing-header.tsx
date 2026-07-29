@@ -41,7 +41,7 @@ export function LandingHeader() {
             href="#"
             className="text-[11px] font-bold uppercase tracking-[0.08em] text-white transition-opacity hover:opacity-80"
           >
-            Own a JunkStart — Franchise Opportunities
+            Own a JunkStart · Franchise Opportunities
           </Link>
           <a
             href={PHONE_TEL}

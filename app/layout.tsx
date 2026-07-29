@@ -5,14 +5,14 @@ import "@/app/globals.css"
 import { SiteChrome } from "@/components/site-chrome"
 import { cn } from "@/lib/utils"
 
-// Open Sans — the brand text face (body, subheads, forms, UI).
+// Open Sans, the brand text face (body, subheads, forms, UI).
 const openSans = Open_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-open-sans",
 })
 
-// Poppins — the brand display face (h1–h6, buttons, card titles).
+// Poppins, the brand display face (h1 to h6, buttons, card titles).
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
@@ -20,9 +20,9 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: "JunkStart Junk Removal — Instant Junk Removal Quotes",
+  title: "JunkStart Junk Removal · Priced by the Pound",
   description:
-    "Full-service junk removal and hauling for homes and businesses. Furniture, appliances, garage and estate cleanouts, construction debris and more. Get an upfront price in under two minutes.",
+    "Junk removal priced by the pound on a certified scale. See your range in one tap.",
   icons: {
     icon: "/favicon.ico",
   },

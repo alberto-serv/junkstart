@@ -10,19 +10,19 @@ import {
 const FAQS = [
   {
     q: "How much does junk removal cost?",
-    a: "Junk removal is priced by volume — how much of the truck your pile fills — plus how hard it is to get out. Our truck holds 16 cubic yards, and a typical half-truck household load runs a few hundred dollars all in. The online estimator gives you a real number in about two minutes, and loading, hauling and disposal are all included in it.",
+    a: "We price by weight, not by guesswork. Every truck carries a certified onboard scale, so your load is weighed on site and you pay for exactly what it weighs. The online estimator turns a one-tap description of your pile into an honest range in about two minutes, and loading, hauling and disposal are all included in it.",
   },
   {
     q: "Do I have to move everything outside first?",
-    a: "No. Full-service is the default: the crew carries everything out of the garage, basement, or upstairs bedroom for you. If your pile is already at the curb, choose curbside pickup in the estimator and you'll save 15% — we just load and go.",
+    a: "No. The crew carries everything out of the garage, basement, or upstairs bedroom for you. Since the price comes off the scale rather than off how long the carry takes, moving it to the curb yourself does not change what you pay.",
   },
   {
     q: "What won't you take?",
-    a: "We can't accept hazardous material: paint, solvents, motor oil, pesticides, asbestos, propane tanks or medical waste. Almost everything else is fair game — furniture, appliances, electronics, construction debris, yard waste, hot tubs and whole-property cleanouts.",
+    a: "We can't accept hazardous material: paint, solvents, motor oil, pesticides, asbestos, propane tanks or medical waste. Almost everything else is fair game: furniture, appliances, electronics, construction debris, yard waste, hot tubs and whole-property cleanouts.",
   },
   {
     q: "What happens to my stuff after you haul it?",
-    a: "Anything still usable goes to a local charity partner, and we'll send you the itemized donation receipt. Metal, electronics, cardboard and construction debris are routed to recyclers. Only what's genuinely spent goes to the landfill — across our loads that works out to roughly 40%.",
+    a: "Anything still usable goes to a local charity partner, and we'll send you the itemized donation receipt. Metal, electronics, cardboard and construction debris are routed to recyclers. Only what's genuinely spent goes to the landfill, which across our loads works out to roughly 40%.",
   },
   {
     q: "How soon can you come out?",
@@ -30,7 +30,7 @@ const FAQS = [
   },
   {
     q: "Is the estimate the price I actually pay?",
-    a: "It's an honest estimate, not a bait number. The crew confirms the final all-in price on site before anything goes on the truck — and if the pile turns out smaller than you described, you pay less. Nothing is charged when you book.",
+    a: "The estimate sets expectations, the scale sets the price. Your load is weighed on a certified onboard scale before the crew starts, and you see that number on site. If it weighs less than the estimate suggested, you pay less. Nothing is charged when you book.",
   },
 ]
 

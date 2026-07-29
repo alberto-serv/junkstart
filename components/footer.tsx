@@ -22,7 +22,7 @@ export function Footer() {
             <p className="mt-[18px] text-sm leading-relaxed text-[#c3d5f7]">
               Upfront pricing, uniformed crews, and same-week pickups. We haul furniture,
               appliances, construction debris, and whole-property cleanouts for homes and
-              businesses across {SERVICE_CITY} — and we donate or recycle everything we can.
+              businesses across {SERVICE_CITY}, and we donate or recycle everything we can.
             </p>
           </div>
           <div className="space-y-3">

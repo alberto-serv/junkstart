@@ -22,7 +22,7 @@ export default function ContactPage() {
   useEffect(() => {
     const address = searchParams.get("address")
     const job = searchParams.get("job")
-    const size = searchParams.get("yards")
+    const size = searchParams.get("lowLbs")
     if (address) setPrefilledAddress(address)
     if (job) setSelectedJob(job)
     if (size) setLoadSize(size)
@@ -58,8 +58,8 @@ export default function ContactPage() {
           </div>
           <h1 className="disp text-ink text-[clamp(28px,4vw,44px)] mb-4">Tell Us About the Job</h1>
           <p className="text-body max-w-2xl mx-auto">
-            Multiple truckloads, a whole-property cleanout, or something the estimator
-            doesn&apos;t cover? Send us the details and a crew lead will price it for you.
+            A whole-property cleanout, a heavy debris load, or anything past the weight the
+            estimator quotes online? Send us the details and a crew lead will price it for you.
           </p>
         </div>
       </section>
@@ -119,8 +119,8 @@ export default function ContactPage() {
                           </select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="load-size">Rough size (cubic yards or truckloads)</Label>
-                          <Input id="load-size" type="text" defaultValue={loadSize} placeholder="e.g. 2 truckloads" />
+                          <Label htmlFor="load-size">Rough size or weight</Label>
+                          <Input id="load-size" type="text" defaultValue={loadSize} placeholder="e.g. a packed two-car garage" />
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -134,7 +134,7 @@ export default function ContactPage() {
                       <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-flame/10 mb-2">
                         <Mail className="w-7 h-7 text-flame" />
                       </div>
-                      <h3 className="text-lg md:text-xl font-semibold">Thanks — we&apos;ve got it.</h3>
+                      <h3 className="text-lg md:text-xl font-semibold">Thanks, we&apos;ve got it.</h3>
                       <p className="text-muted-foreground max-w-md mx-auto">
                         A crew lead will reach out within one business day to confirm the details
                         and give you an all-in price.

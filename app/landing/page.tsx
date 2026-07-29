@@ -11,7 +11,7 @@ import { SERVICE_CITY } from "@/lib/junk-data"
 export const metadata: Metadata = {
   title: `Junk Removal in ${SERVICE_CITY} | JunkStart Junk Removal`,
   description:
-    "Upfront-priced junk removal and hauling across Charlotte, NC — furniture, appliances, garage and estate cleanouts, construction debris and more. See your price online in two minutes.",
+    "Junk removal and hauling across Charlotte, NC, priced by the pound on a certified onboard scale. Furniture, appliances, garage and estate cleanouts, construction debris and more. See your range in one tap.",
 }
 
 const SERVICES = [
@@ -24,8 +24,8 @@ const SERVICES = [
 ]
 
 const WHY = [
-  "Your price before the truck rolls, not after",
-  "We do the carrying — stairs, basements and all",
+  "Priced by the pound on a certified onboard scale",
+  "We do the carrying. Stairs, basements and all",
   "Licensed, insured, background-checked crews",
   "Donation and recycling routing on every load",
   "Same-day and next-day slots most weeks",
@@ -73,8 +73,8 @@ export default function LandingPage() {
             </h1>
             <p className="mt-6 text-[15px] leading-relaxed text-white/90 md:text-base">
               Tell us what you&apos;ve got and how much of it there is, and you&apos;ll see your
-              all-in price online — loading, hauling and disposal included. No walkthrough
-              required, no surprise fees when the truck arrives.
+              all-in range online, with loading, hauling and disposal included. Your load is
+              then weighed on a certified scale, so you pay for exactly what it weighs.
             </p>
             <a
               href={QUOTE_URL}
@@ -106,8 +106,8 @@ export default function LandingPage() {
               ))}
             </ul>
             <p className="mt-7 text-[15px] leading-relaxed text-body">
-              Residential or commercial, one item or a whole property — the same upfront pricing
-              applies either way.
+              Residential or commercial, one item or a whole property. The same by-the-pound
+              pricing applies either way.
             </p>
           </div>
         </div>
@@ -180,11 +180,12 @@ export default function LandingPage() {
             <p className="mt-6 text-[15px] leading-relaxed text-body">
               Most people put off a cleanout because they can&apos;t find out what it costs without
               scheduling someone to come look at it first. JunkStart flips that around: the
-              estimator prices your pile by volume the same way our crew does on site, so you see a
-              real number before you commit to anything. From single-item furniture pickups in
+              estimator translates a one-tap description of your pile into a weight range and
+              prices it the same way the certified scale on our truck will, so you see a real
+              number before you commit to anything. From single-item furniture pickups in
               Plaza Midwood to full estate cleanouts in Ballantyne and construction debris hauls for
               contractors across Mecklenburg County, the crew handles the lifting, the loading and
-              the disposal — and routes everything still usable to a local charity partner before
+              the disposal, and routes everything still usable to a local charity partner before
               anything heads to the landfill.{" "}
               <a href="#" className="font-semibold text-flame underline">
                 Read more
@@ -240,7 +241,7 @@ export default function LandingPage() {
               Find Out What Your Pile Costs
             </h2>
             <p className="mx-auto mt-5 max-w-md text-[15px] leading-relaxed text-body">
-              Two minutes online and you&apos;ll have an all-in price — loading, hauling and
+              Two minutes online and you&apos;ll have an all-in range, with loading, hauling and
               disposal included.
             </p>
             <a

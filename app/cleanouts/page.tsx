@@ -5,19 +5,22 @@ import Image from "next/image"
 import { Reveal } from "./reveal"
 import {
   ArrowRight, Check, ShieldCheck, ClipboardCheck, Phone, Star, Sparkles,
-  Truck, Recycle, KeyRound, CalendarClock, HeartHandshake, Boxes,
+  Scale, Recycle, KeyRound, CalendarClock, HeartHandshake, Boxes,
 } from "lucide-react"
-import { PHONE, PHONE_TEL, SERVICE_CITY, TRUCK_CAPACITY } from "@/lib/junk-data"
+import { PHONE, PHONE_TEL, SERVICE_CITY, ON_SITE_THRESHOLD_LBS } from "@/lib/junk-data"
 
 export const metadata: Metadata = {
   title: "Estate & Property Cleanouts | JunkStart Junk Removal",
   description:
-    "Whole-property cleanouts for estates, probate sales, evictions and listing prep. Donation routing with itemized receipts, broom-clean finish, and an upfront price in under two minutes.",
+    "Whole-property cleanouts for estates, probate sales, evictions and listing prep. Donation routing with itemized receipts, a broom-clean finish, and a firm price from a free on-site walkthrough.",
 }
 
-// Every button on this page drives into the estimator with the estate cleanout
-// job type pre-selected.
-const ESTIMATE_HREF = "/?type=estate"
+// Cleanouts sit squarely in the on-site tier: a whole property is past the
+// 1,500 lb line where the online estimator stops quoting, so the primary CTA
+// books the free walkthrough. The estimator is the secondary route, for the
+// smaller single-room jobs that also land on this page.
+const BOOK_HREF = "/checkout?book=1"
+const ESTIMATE_HREF = "/"
 
 const CREDENTIALS = [
   "Licensed, bonded & insured",
@@ -31,13 +34,13 @@ const CREDENTIALS = [
 const STEPS = [
   {
     icon: ClipboardCheck,
-    title: "Walk it with us — or don't",
-    copy: "Price the job yourself in the estimator, or have a crew lead walk the property and hand you a written all-in number. Either way you know the price before anything moves.",
+    title: "A crew lead walks it with you",
+    copy: "A whole property is too variable to price from a description, so we look at it first and hand you a written all-in number. You know the price before anything moves.",
   },
   {
     icon: Boxes,
     title: "You mark what stays",
-    copy: "Tag the keep-items with anything you like — painter's tape works. The crew clears everything else, room by room, and checks in before touching anything ambiguous.",
+    copy: "Tag the keep-items with anything you like. Painter's tape works. The crew clears everything else, room by room, and checks in before touching anything ambiguous.",
   },
   {
     icon: HeartHandshake,
@@ -47,7 +50,7 @@ const STEPS = [
   {
     icon: KeyRound,
     title: "Broom-clean handoff",
-    copy: "We sweep, do a final walk, and text you photos when it's empty — so the property is ready to list, show or hand back the same day.",
+    copy: "We sweep, do a final walk, and text you photos when it's empty, so the property is ready to list, show or hand back the same day.",
   },
 ]
 
@@ -55,7 +58,7 @@ const SITUATIONS = [
   { title: "Estate & probate", copy: "Clearing a family home on the executor's timeline, with the paperwork the estate needs." },
   { title: "Listing prep", copy: "Getting a property show-ready before photos, often inside an agent's one-week window." },
   { title: "Tenant turnover", copy: "Post-eviction and end-of-lease clearouts so the unit can be re-rented without a lost month." },
-  { title: "Downsizing & moves", copy: "Everything the movers won't take, cleared the same week the truck comes." },
+  { title: "Downsizing & moves", copy: "Everything the movers won't take, cleared the same week you need it gone." },
   { title: "Hoarding recovery", copy: "Heavy-volume, multi-load clears handled without judgment and at a pace that works." },
   { title: "Foreclosure & REO", copy: "Bank-owned and trustee-sale properties cleared to broom-clean with photo documentation." },
 ]
@@ -75,19 +78,19 @@ export default function CleanoutsLandingPage() {
               </span>
 
               <h1 className="mt-6 text-balance text-ink text-4xl leading-[1.05] sm:text-5xl md:text-6xl">
-                An entire property cleared —{" "}
+                An entire property cleared,{" "}
                 <span className="text-flame">without a single trip</span> to the dump.
               </h1>
 
               <p className="mt-6 max-w-xl text-lg leading-relaxed text-body">
                 Estates, probate sales, evictions and listing prep. We clear it room by room,
-                donate what&apos;s still good, and leave it broom-clean. You get an upfront price
-                in about two minutes — no walkthrough required to start.
+                donate what&apos;s still good, and leave it broom-clean. A crew lead walks the
+                property and gives you a firm all-in number before any work starts.
               </p>
 
               <div className="mt-9 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-                <Link href={ESTIMATE_HREF} className="btn-flame text-base">
-                  Price My Cleanout
+                <Link href={BOOK_HREF} className="btn-flame text-base">
+                  Book a Free On-Site Estimate
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <a
@@ -99,12 +102,21 @@ export default function CleanoutsLandingPage() {
                 </a>
               </div>
 
+              <div className="mt-4">
+                <Link
+                  href={ESTIMATE_HREF}
+                  className="text-[14.5px] font-bold text-flame transition-colors hover:text-flame-deep"
+                >
+                  Smaller job? Get an instant range
+                </Link>
+              </div>
+
               <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <Star className="h-4 w-4 text-flame" /> Serving {SERVICE_CITY}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Truck className="h-4 w-4 text-flame" /> {TRUCK_CAPACITY} cu yd per truck
+                  <Scale className="h-4 w-4 text-flame" /> Priced by weight on a certified scale
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Recycle className="h-4 w-4 text-flame" /> ~60% diverted from landfill
@@ -233,14 +245,14 @@ export default function CleanoutsLandingPage() {
               </h2>
               <p className="mt-4 text-[15px] leading-relaxed text-body">
                 Tell us the date the property has to be empty and we&apos;ll size the crew and the
-                number of trucks to hit it — including weekends and multi-day clears when the
-                volume calls for it. Multi-load jobs get a written, fixed price after a
-                walkthrough, so a second truck never turns into a second invoice you didn&apos;t
-                expect.
+                number of loads to hit it, including weekends and multi-day clears when the job
+                calls for it. Anything past {ON_SITE_THRESHOLD_LBS.toLocaleString()} lbs gets a
+                written, fixed price after the walkthrough, so a second load never turns into a
+                second invoice you didn&apos;t expect.
               </p>
               <div className="mt-7 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-                <Link href={ESTIMATE_HREF} className="btn-flame text-base">
-                  Start My Estimate
+                <Link href={BOOK_HREF} className="btn-flame text-base">
+                  Book a Free On-Site Estimate
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <Link href="/contact" className="btn-ghost-brand text-base">
@@ -261,12 +273,12 @@ export default function CleanoutsLandingPage() {
                 Get Your Cleanout Priced Today
               </h2>
               <p className="mx-auto mt-5 max-w-md text-[15px] leading-relaxed text-body">
-                Two minutes online for an all-in number, or call and a crew lead will walk the
-                property with you.
+                A crew lead walks the property, weighs up what is actually there, and leaves you
+                with a firm number. Free, with no obligation.
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Link href={ESTIMATE_HREF} className="btn-flame text-base">
-                  Price My Cleanout
+                <Link href={BOOK_HREF} className="btn-flame text-base">
+                  Book a Free On-Site Estimate
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <a
@@ -277,6 +289,15 @@ export default function CleanoutsLandingPage() {
                   {PHONE}
                 </a>
               </div>
+
+              <div className="mt-4">
+                <Link
+                  href={ESTIMATE_HREF}
+                  className="text-[14.5px] font-bold text-flame transition-colors hover:text-flame-deep"
+                >
+                  Smaller job? Get an instant range
+                </Link>
+              </div>
             </div>
           </Reveal>
         </div>
@@ -284,8 +305,8 @@ export default function CleanoutsLandingPage() {
 
       {/* ── Sticky mobile CTA ────────────────────────────────────────────── */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 p-3 backdrop-blur md:hidden">
-        <Link href={ESTIMATE_HREF} className="btn-flame w-full text-base">
-          Price My Cleanout
+        <Link href={BOOK_HREF} className="btn-flame w-full text-base">
+          Book a Free On-Site Estimate
           <ArrowRight className="h-5 w-5" />
         </Link>
       </div>
