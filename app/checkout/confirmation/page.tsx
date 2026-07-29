@@ -3,12 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import Image from "next/image"
-import { CalendarDays, Clock, MapPin, Truck } from "lucide-react"
-import {
-  getJob, FREQUENCY_CONFIG, SERVICE_LEVEL_LABELS,
-  PHONE, PHONE_TEL, SERVICE_CITY,
-  type JobId, type FrequencyType, type ServiceLevelType,
-} from "@/lib/junk-data"
+import { CalendarDays, Clock, MapPin, Scale } from "lucide-react"
+import { PHONE, PHONE_TEL, SERVICE_CITY } from "@/lib/junk-data"
 
 function fmt(n: number | string): string {
   const num = typeof n === "string" ? parseFloat(n) : n
@@ -20,19 +16,17 @@ export default function ConfirmationPage() {
   const searchParams = useSearchParams()
   const receiptRef = useRef<HTMLDivElement>(null)
   const [data, setData] = useState({
-    job: "",
-    specName: "",
-    frequency: "",
-    serviceLevel: "",
-    accessLabel: "",
-    yards: "0",
-    loadLabel: "",
-    perPickupPrice: "0",
-    perPickupLow: "0",
-    perPickupHigh: "0",
-    monthlyTotal: "0",
-    monthlyLow: "0",
-    monthlyHigh: "0",
+    scenario: "",
+    scenarioLabel: "",
+    lowLbs: "0",
+    highLbs: "0",
+    mattressCount: "0",
+    tireCount: "0",
+    low: "0",
+    high: "0",
+    minApplied: "0",
+    discountApplied: "0",
+    surcharges: "0",
     address: "",
     accessNotes: "",
     addOns: "",
@@ -52,7 +46,7 @@ export default function ConfirmationPage() {
       d[key] = searchParams.get(key) || (data as Record<string, string>)[key]
     }
     setData(d as typeof data)
-    // `data` is the shape template only — re-reading on every state change would loop.
+    // `data` is the shape template only. Re-reading on every state change would loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
@@ -63,16 +57,15 @@ export default function ConfirmationPage() {
       })
     : []
 
-  const job = getJob(data.job as JobId)
-  const JobIcon = job.icon
-  const freqConfig = FREQUENCY_CONFIG[data.frequency as FrequencyType]
-  const freqLabel = freqConfig?.label ?? data.frequency
-  const recurring = freqConfig?.recurring ?? false
-  const serviceLevelLabel = SERVICE_LEVEL_LABELS[data.serviceLevel as ServiceLevelType] ?? ""
+  const scenarioLabel = data.scenarioLabel || "Your pickup"
+  const mattressCount = parseInt(data.mattressCount, 10) || 0
+  const tireCount = parseInt(data.tireCount, 10) || 0
+  const surcharges = parseFloat(data.surcharges) || 0
+  const weightText = `~${fmt(data.lowLbs)} to ${fmt(data.highLbs)} lbs`
 
-  // A skipped-estimator walkthrough booking arrives with no price — show the
-  // booking confirmation without the quote and pickup-detail sections.
-  const quoted = parseFloat(data.perPickupHigh) > 0
+  // A skipped-estimator walkthrough booking arrives with no price, so the
+  // receipt drops the quote and pickup-detail sections.
+  const quoted = parseFloat(data.high) > 0
   const receiptDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
 
   const totalLow = parseFloat(data.totalLow) || 0
@@ -94,7 +87,7 @@ export default function ConfirmationPage() {
         {/* Receipt Card */}
         <div ref={receiptRef} className="max-w-[760px] mx-auto bg-white border border-line rounded-lg shadow-brand-sm overflow-hidden print:shadow-none print:border-0">
 
-          {/* Receipt header — color logo on white */}
+          {/* Receipt header, color logo on white */}
           <div className="px-6 py-5 md:px-8 md:py-6 flex items-center justify-between border-b border-line-soft">
             <div>
               <Image src="/images/logo.svg" alt="JunkStart Junk Removal" width={135} height={69} className="h-10 w-auto" />
@@ -156,31 +149,28 @@ export default function ConfirmationPage() {
                 <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
                   <div>
                     <p className="text-muted-foreground">What we&apos;re hauling</p>
-                    <p className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
-                      <JobIcon className="w-4 h-4 text-flame" />
-                      {job.name}
-                    </p>
+                    <p className="font-medium text-foreground mt-0.5">{scenarioLabel}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Load size</p>
+                    <p className="text-muted-foreground">Estimated weight</p>
                     <p className="font-medium text-foreground flex items-center gap-1.5 mt-0.5">
-                      <Truck className="w-4 h-4 text-flame" />
-                      {data.loadLabel || `${fmt(data.yards)} cu yd`}
+                      <Scale className="w-4 h-4 text-flame" />
+                      {weightText}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Loading</p>
-                    <p className="font-medium text-foreground mt-0.5">{serviceLevelLabel}</p>
-                  </div>
-                  {data.accessLabel && (
+                  {surcharges > 0 && (
                     <div>
-                      <p className="text-muted-foreground">Access</p>
-                      <p className="font-medium text-foreground mt-0.5">{data.accessLabel}</p>
+                      <p className="text-muted-foreground">Disposal surcharges</p>
+                      <p className="font-medium text-foreground mt-0.5">
+                        ${fmt(surcharges)}
+                        {mattressCount > 0 && ` · ${mattressCount} mattress${mattressCount === 1 ? "" : "es"}`}
+                        {tireCount > 0 && ` · ${tireCount} tire${tireCount === 1 ? "" : "s"}`}
+                      </p>
                     </div>
                   )}
                   <div>
-                    <p className="text-muted-foreground">Schedule</p>
-                    <p className="font-medium text-foreground mt-0.5">{freqLabel}</p>
+                    <p className="text-muted-foreground">Final price</p>
+                    <p className="font-medium text-foreground mt-0.5">By certified scale at pickup</p>
                   </div>
                   {data.address && (
                     <div>
@@ -204,16 +194,18 @@ export default function ConfirmationPage() {
                 <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">Service</h3>
                 <div className="bg-[#F2F0EC] border border-line-soft rounded-lg p-4">
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <p className="text-[19px] font-semibold text-ink">{data.specName || job.name}</p>
+                    <p className="text-[19px] font-semibold text-ink">{scenarioLabel}</p>
                     <div className="flex items-baseline gap-1">
                       <span className="text-xl font-extrabold text-flame">
-                        ${fmt(data.perPickupLow)} – ${fmt(data.perPickupHigh)}
+                        ${fmt(data.low)} &ndash; ${fmt(data.high)}
                       </span>
-                      <span className="text-sm text-body font-semibold">per pickup</span>
+                      <span className="text-sm text-body font-semibold">all in</span>
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {freqLabel} &middot; {data.loadLabel}
+                    {weightText} estimated
+                    {data.minApplied === "1" && " · includes our minimum pickup"}
+                    {data.discountApplied === "1" && " · volume rate applied"}
                   </p>
                 </div>
               </div>
@@ -244,20 +236,18 @@ export default function ConfirmationPage() {
               {quoted ? (
                 <>
                   <div className="flex justify-between gap-3 font-bold">
-                    <span className="text-ink">{recurring ? "Monthly total" : "Total, all in"}</span>
-                    <span className="text-ink text-base whitespace-nowrap">
-                      {totalText}{recurring ? "/mo" : ""}
-                    </span>
+                    <span className="text-ink">Total, all in</span>
+                    <span className="text-ink text-base whitespace-nowrap">{totalText}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-3">
-                    Loading, hauling and disposal are included. The crew confirms the final
-                    number on site — if the pile is smaller than you thought, you pay less.
+                    Loading, hauling and disposal are included. Final price by certified scale at
+                    pickup, so if the load weighs less than estimated, you pay less.
                   </p>
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   A crew lead will size up the job during the walkthrough and hand you a written
-                  all-in price — no obligation.
+                  all-in price, no obligation.
                 </p>
               )}
             </div>

@@ -12,54 +12,33 @@ import {
   ArrowLeft, Check, MapPin, AlertCircle, Loader2, LocateFixed,
   ChevronLeft, ChevronRight, CalendarDays,
 } from "lucide-react"
-import {
-  FREQUENCY_CONFIG, serviceSpecFor, isJobId, getJob,
-  SERVICE_LEVEL_LABELS, accessOptionsFor, truckFractionLabel, rangeStr,
-  type FrequencyType, type JobId, type ServiceLevelType, type AccessType,
-} from "@/lib/junk-data"
+import { SCENARIOS, rangeStr } from "@/lib/junk-data"
 
 // ─── Add-ons ─────────────────────────────────────────────────────────────────
 //
 // Junk removal add-ons are either a per-item disposal fee the landfill charges us
 // (mattresses, freon appliances, e-waste) or extra labor beyond loading
-// (dismantling, demolition, sweeping). Flat fees — they don't scale with volume.
+// (dismantling, demolition, sweeping). Flat fees, independent of the load weight.
 
 interface AddOn { id: string; name: string; price: number; description: string }
 
-function buildAddOns(job: JobId, serviceLevel: ServiceLevelType): AddOn[] {
-  const addOns: AddOn[] = [
-    { id: "mattress", name: "Mattress & Box Spring Disposal", price: 35, description: "Most transfer stations charge a per-piece fee to accept mattresses. This covers the surcharge and routes yours to a mattress-recycling facility instead of the landfill." },
+function buildAddOns(): AddOn[] {
+  return [
     { id: "freon", name: "Freon Appliance Recovery", price: 45, description: "Refrigerators, freezers and window AC units need certified refrigerant recovery before they can be scrapped. Includes the EPA-compliant recovery and documentation." },
     { id: "ewaste", name: "Certified E-Waste Recycling", price: 30, description: "TVs, monitors and computers routed to a certified R2 electronics recycler, with hard drives physically destroyed on request." },
     { id: "dismantle", name: "On-Site Dismantling", price: 120, description: "Sheds, playsets, hot tubs, workbenches and anything else that has to come apart before it fits through the door or onto the truck." },
-    { id: "demo", name: "Light Demolition", price: 250, description: "Small-scale interior demolition — deck boards, non-structural walls, fencing, cabinetry and flooring — removed and hauled in the same visit." },
+    { id: "demo", name: "Light Demolition", price: 250, description: "Small-scale interior demolition. Deck boards, non-structural walls, fencing, cabinetry and flooring, removed and hauled in the same visit." },
     { id: "sweep", name: "Broom-Clean Finish", price: 60, description: "A full sweep, wipe-down and debris check of the cleared space, so a garage or unit is ready to hand off, list, or re-rent the same day." },
     { id: "donation", name: "Donation Drop-Off & Receipt", price: 0, description: "We route anything still usable to a local charity partner and send you the itemized donation receipt for your taxes. Always free." },
     { id: "priority", name: "Same-Day / Next-Day Priority", price: 75, description: "Jumps your pickup to the front of the route when you need it gone now. Subject to same-day crew availability." },
   ]
+}
 
-  // Curbside piles are already staged and the crew never enters the property, so
-  // labor-side add-ons don't apply.
-  const gated = serviceLevel === "curbside"
-    ? addOns.filter((a) => !["dismantle", "demo", "sweep"].includes(a.id))
-    : addOns
-
-  // Surface the fee that's most likely to apply to this job first.
-  const lead: Partial<Record<JobId, string>> = {
-    furniture: "mattress",
-    appliances: "freon",
-    electronics: "ewaste",
-    hottub: "dismantle",
-    construction: "demo",
-    storage: "sweep",
-    garage: "sweep",
-    office: "ewaste",
-  }
-  const leadId = lead[job]
-  if (!leadId) return gated
-  const first = gated.find((a) => a.id === leadId)
-  if (!first) return gated
-  return [first, ...gated.filter((a) => a.id !== leadId)]
+/** Resolve the ?scenario= param back to the card label the customer picked. */
+function scenarioLabelFor(id: string | null): string {
+  if (!id) return "Your pickup"
+  if (id === "custom") return "Your item tally"
+  return SCENARIOS.find((s) => s.id === id)?.label ?? "Your pickup"
 }
 
 // ─── Scheduling helpers ─────────────────────────────────────────────────────
@@ -91,19 +70,17 @@ function isSameDay(a: Date, b: Date) {
 
 export default function CheckoutPage() {
   const searchParams = useSearchParams()
-  const [job, setJob] = useState<JobId>("garage")
-  const [yards, setYards] = useState(8)
-  const [loadLabel, setLoadLabel] = useState("")
-  const [frequency, setFrequency] = useState<FrequencyType>("one-time")
-  const [serviceLevel, setServiceLevel] = useState<ServiceLevelType>("full-service")
-  const [access, setAccess] = useState<AccessType>("standard")
-  const [perPickupPrice, setPerPickupPrice] = useState(0)
-  const [perPickupLow, setPerPickupLow] = useState(0)
-  const [perPickupHigh, setPerPickupHigh] = useState(0)
-  const [monthlyTotal, setMonthlyTotal] = useState(0)
-  const [monthlyLow, setMonthlyLow] = useState(0)
-  const [monthlyHigh, setMonthlyHigh] = useState(0)
+  const [scenario, setScenario] = useState("")
+  const [scenarioLabel, setScenarioLabel] = useState("Your pickup")
+  const [lowLbs, setLowLbs] = useState(0)
+  const [highLbs, setHighLbs] = useState(0)
+  const [mattressCount, setMattressCount] = useState(0)
+  const [tireCount, setTireCount] = useState(0)
+  const [low, setLow] = useState(0)
+  const [high, setHigh] = useState(0)
   const [minApplied, setMinApplied] = useState(false)
+  const [discountApplied, setDiscountApplied] = useState(false)
+  const [surcharges, setSurcharges] = useState(0)
   const [serviceAddress, setServiceAddress] = useState("")
   const [addressInput, setAddressInput] = useState("")
   const [addressLine2, setAddressLine2] = useState("")
@@ -133,40 +110,34 @@ export default function CheckoutPage() {
     "6401 Morrison Blvd, Charlotte, NC 28211",
   ], [])
 
-  const availableAddOns = useMemo(() => buildAddOns(job, serviceLevel), [job, serviceLevel])
+  const availableAddOns = useMemo(() => buildAddOns(), [])
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
   useEffect(() => {
     if (hasInit.current) return
     hasInit.current = true
-    const j = searchParams.get("job")
-    const y = searchParams.get("yards")
-    const ll = searchParams.get("loadLabel")
-    const f = searchParams.get("frequency") as FrequencyType | null
-    const sl = searchParams.get("serviceLevel") as ServiceLevelType | null
-    const ac = searchParams.get("access") as AccessType | null
-    const ppp = searchParams.get("perPickupPrice")
-    const ppl = searchParams.get("perPickupLow")
-    const pph = searchParams.get("perPickupHigh")
-    const mt = searchParams.get("monthlyTotal")
-    const ml = searchParams.get("monthlyLow")
-    const mh = searchParams.get("monthlyHigh")
-    const ma = searchParams.get("minApplied")
+    const num = (key: string) => {
+      const raw = searchParams.get(key)
+      if (!raw) return null
+      const n = parseInt(raw, 10)
+      return Number.isNaN(n) ? null : n
+    }
 
-    if (isJobId(j)) setJob(j)
-    if (y) setYards(parseInt(y))
-    if (ll) setLoadLabel(ll)
-    if (f && FREQUENCY_CONFIG[f]) setFrequency(f)
-    if (sl === "full-service" || sl === "curbside") setServiceLevel(sl)
-    if (ac === "easy" || ac === "standard" || ac === "hard") setAccess(ac)
-    if (ppp) setPerPickupPrice(parseInt(ppp))
-    if (ppl) setPerPickupLow(parseInt(ppl))
-    if (pph) setPerPickupHigh(parseInt(pph))
-    if (mt) setMonthlyTotal(parseInt(mt))
-    if (ml) setMonthlyLow(parseInt(ml))
-    if (mh) setMonthlyHigh(parseInt(mh))
-    if (ma) setMinApplied(ma === "1")
+    // book=1 is the on-site path: no weights, no price, so every field below
+    // stays at zero and the page renders its walkthrough variant.
+    const sc = searchParams.get("scenario")
+    if (sc) { setScenario(sc); setScenarioLabel(scenarioLabelFor(sc)) }
+
+    const lbsLow = num("lowLbs"); if (lbsLow !== null) setLowLbs(lbsLow)
+    const lbsHigh = num("highLbs"); if (lbsHigh !== null) setHighLbs(lbsHigh)
+    const mc = num("mattressCount"); if (mc !== null) setMattressCount(mc)
+    const tc = num("tireCount"); if (tc !== null) setTireCount(tc)
+    const lo = num("low"); if (lo !== null) setLow(lo)
+    const hi = num("high"); if (hi !== null) setHigh(hi)
+    const sur = num("surcharges"); if (sur !== null) setSurcharges(sur)
+    setMinApplied(searchParams.get("minApplied") === "1")
+    setDiscountApplied(searchParams.get("discountApplied") === "1")
   }, [searchParams])
 
   // Address suggestions
@@ -218,27 +189,18 @@ export default function CheckoutPage() {
     setSelectedAddOns(prev => prev.find(a => a.id === addOn.id) ? prev.filter(a => a.id !== addOn.id) : [...prev, addOn])
   }, [])
 
-  // When the customer skips the estimator, no price comes through — we render an
-  // on-site-quote booking flow instead of the priced pickup.
-  const hasQuote = perPickupHigh > 0
+  // When the customer skips the estimator, no price comes through and we render
+  // the on-site-quote booking flow instead of the priced pickup.
+  const hasQuote = high > 0
 
-  const freqConfig = FREQUENCY_CONFIG[frequency]
-  const recurring = freqConfig.recurring
-  const spec = serviceSpecFor(job)
-  const accessInfo = accessOptionsFor(job)[access]
-
-  // Add-on fees are per pickup and land on top of the haul price.
+  // Add-on fees land on top of the weighed haul price.
   const addOnsTotal = useMemo(() => selectedAddOns.reduce((s, a) => s + a.price, 0), [selectedAddOns])
 
-  const haulLow = recurring ? monthlyLow : perPickupLow
-  const haulHigh = recurring ? monthlyHigh : perPickupHigh
-  const addOnsPeriod = recurring ? Math.round(addOnsTotal * freqConfig.pickupsPerMonth) : addOnsTotal
-  const totalLow = haulLow + addOnsPeriod
-  const totalHigh = haulHigh + addOnsPeriod
+  const totalLow = low + addOnsTotal
+  const totalHigh = high + addOnsTotal
 
-  const priceText = (low: number, high: number) =>
-    low === high ? `$${low.toLocaleString()}` : `$${rangeStr(low, high)}`
-  const periodSuffix = recurring ? "/mo" : ""
+  const priceText = (a: number, b: number) => `$${rangeStr(a, b)}`
+  const weightText = `~${lowLbs.toLocaleString()} to ${highLbs.toLocaleString()} lbs estimated`
 
   const canBook = customerInfo.firstName && customerInfo.lastName && customerInfo.email
     && phoneNumber.trim() && serviceAddress && selectedDate && selectedTimeSlot
@@ -251,24 +213,21 @@ export default function CheckoutPage() {
     await new Promise(r => setTimeout(r, 1500))
     const visitSlot = TIME_SLOTS.find(s => s.id === selectedTimeSlot)
     const params = new URLSearchParams({
-      job,
-      specName: spec.name,
-      frequency,
-      serviceLevel,
-      access,
-      accessLabel: accessInfo.label,
-      yards: yards.toString(),
-      loadLabel: loadLabel || truckFractionLabel(yards),
-      perPickupPrice: perPickupPrice.toString(),
-      perPickupLow: perPickupLow.toString(),
-      perPickupHigh: perPickupHigh.toString(),
-      monthlyTotal: monthlyTotal.toString(),
-      monthlyLow: monthlyLow.toString(),
-      monthlyHigh: monthlyHigh.toString(),
+      scenario,
+      scenarioLabel,
+      lowLbs: lowLbs.toString(),
+      highLbs: highLbs.toString(),
+      mattressCount: mattressCount.toString(),
+      tireCount: tireCount.toString(),
+      low: low.toString(),
+      high: high.toString(),
+      minApplied: minApplied ? "1" : "0",
+      discountApplied: discountApplied ? "1" : "0",
+      surcharges: surcharges.toString(),
       address: [serviceAddress, addressLine2.trim()].filter(Boolean).join(", "),
       accessNotes,
       addOns: selectedAddOns.map(a => `${a.name}:${a.price}`).join(","),
-      addOnsTotal: addOnsPeriod.toString(),
+      addOnsTotal: addOnsTotal.toString(),
       totalLow: totalLow.toString(),
       totalHigh: totalHigh.toString(),
       customerName: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
@@ -279,7 +238,7 @@ export default function CheckoutPage() {
     })
     window.location.href = `/checkout/confirmation?${params.toString()}`
     setIsLoading(false)
-  }, [job, spec, frequency, serviceLevel, access, accessInfo, yards, loadLabel, perPickupPrice, perPickupLow, perPickupHigh, monthlyTotal, monthlyLow, monthlyHigh, serviceAddress, addressLine2, accessNotes, selectedAddOns, addOnsPeriod, totalLow, totalHigh, customerInfo, phoneNumber, selectedDate, selectedTimeSlot])
+  }, [scenario, scenarioLabel, lowLbs, highLbs, mattressCount, tireCount, low, high, minApplied, discountApplied, surcharges, serviceAddress, addressLine2, accessNotes, selectedAddOns, addOnsTotal, totalLow, totalHigh, customerInfo, phoneNumber, selectedDate, selectedTimeSlot])
 
   // Calendar pagination: show 5 days at a time
   const visibleDates = availableDates.slice(calendarWeekStart, calendarWeekStart + 5)
@@ -311,27 +270,35 @@ export default function CheckoutPage() {
               {hasQuote ? (
                 <div className="bg-brand-band border border-[#E4DBC2] p-6 rounded-lg">
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-1">
-                    <h3 className="text-[19px] font-semibold text-ink">{getJob(job).name}</h3>
+                    <h3 className="text-[19px] font-semibold text-ink">{scenarioLabel}</h3>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-extrabold text-flame">{priceText(haulLow, haulHigh)}</span>
-                      <span className="text-body text-[13px] font-semibold">{periodSuffix || "all in"}</span>
+                      <span className="text-xl font-extrabold text-flame">{priceText(low, high)}</span>
+                      <span className="text-body text-[13px] font-semibold">all in</span>
                     </div>
                   </div>
-                  <p className="text-[13.5px] text-body">
-                    {loadLabel || truckFractionLabel(yards)} &middot; {freqConfig.label}
-                  </p>
-                  <p className="text-[13.5px] text-body mt-0.5">
-                    {SERVICE_LEVEL_LABELS[serviceLevel]} &middot; {accessInfo.label}
-                  </p>
-                  <p className="text-[13.5px] text-body mt-2">{spec.subtitle}</p>
-                  {minApplied && (
-                    <p className="text-[12px] font-semibold text-flame mt-2">Minimum pickup price applies</p>
+                  <p className="text-[13.5px] text-body">{weightText}</p>
+                  {surcharges > 0 && (
+                    <p className="text-[13.5px] text-body mt-0.5">
+                      Includes ${surcharges.toLocaleString()} in disposal surcharges
+                      {mattressCount > 0 && ` · ${mattressCount} mattress${mattressCount === 1 ? "" : "es"}`}
+                      {tireCount > 0 && ` · ${tireCount} tire${tireCount === 1 ? "" : "s"}`}
+                    </p>
                   )}
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                    {minApplied && (
+                      <span className="text-[12px] font-semibold text-flame">Includes our minimum pickup</span>
+                    )}
+                    {discountApplied && (
+                      <span className="rounded-full bg-green-100 px-2.5 py-1 text-[11.5px] font-bold text-green-800">
+                        Volume rate applied
+                      </span>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="bg-brand-band border border-[#E4DBC2] p-6 rounded-lg">
                   <p className="text-sm text-ink">
-                    No estimate needed — pick a time below and a crew lead will come out, look at
+                    No estimate needed. Pick a time below and a crew lead will come out, look at
                     the pile, and hand you a written all-in price. Free, with no obligation.
                   </p>
                 </div>
@@ -339,14 +306,14 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          {/* Add-Ons — only with a quote */}
+          {/* Add-Ons, only with a quote */}
           {hasQuote && (
             <Card className="rounded-lg border-line shadow-brand-sm">
               <CardHeader className="pb-3">
                 <CardTitle className={cardTitle}>Add-On Services (Optional)</CardTitle>
                 <p className="text-[13px] text-muted-foreground mt-2">
-                  These sit on top of your haul price. Disposal surcharges are what the facility
-                  charges us — we pass them through at cost.
+                  These sit on top of your weighed haul price. Anything the facility charges us
+                  is passed through at cost.
                 </p>
               </CardHeader>
               <CardContent>
@@ -548,7 +515,7 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          {/* Order Summary — only with a quote */}
+          {/* Order Summary, only with a quote */}
           {hasQuote && (
             <Card className="rounded-lg border-line shadow-brand-sm">
               <CardHeader className="pb-3">
@@ -557,19 +524,24 @@ export default function CheckoutPage() {
               <CardContent>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">
-                      {getJob(job).name} &middot; {loadLabel || truckFractionLabel(yards)}
-                    </span>
-                    <span className="font-medium text-right whitespace-nowrap">{priceText(haulLow, haulHigh)}{periodSuffix}</span>
+                    <span className="text-muted-foreground">{scenarioLabel}</span>
+                    <span className="font-medium text-right whitespace-nowrap">{priceText(low, high)}</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">Loading</span>
-                    <span className="font-medium text-right">{SERVICE_LEVEL_LABELS[serviceLevel]}</span>
+                    <span className="text-muted-foreground">{weightText}</span>
                   </div>
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">Access</span>
-                    <span className="font-medium text-right">{accessInfo.label}</span>
-                  </div>
+                  {surcharges > 0 && (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">
+                        Disposal surcharges
+                        {mattressCount > 0 && ` · ${mattressCount} mattress${mattressCount === 1 ? "" : "es"}`}
+                        {tireCount > 0 && ` · ${tireCount} tire${tireCount === 1 ? "" : "s"}`}
+                      </span>
+                      <span className="font-medium text-right whitespace-nowrap">
+                        included
+                      </span>
+                    </div>
+                  )}
                   {selectedAddOns.length > 0 && (
                     <div className="border-t border-border pt-2 mt-2">
                       <p className="text-muted-foreground mb-1.5">Add-ons</p>
@@ -582,7 +554,6 @@ export default function CheckoutPage() {
                             </span>
                             <span className="font-medium whitespace-nowrap">
                               {a.price === 0 ? "Free" : `+$${a.price}`}
-                              {recurring && a.price > 0 ? " / pickup" : ""}
                             </span>
                           </li>
                         ))}
@@ -590,12 +561,12 @@ export default function CheckoutPage() {
                     </div>
                   )}
                   <div className="border-t border-border pt-2 mt-2 flex justify-between gap-3 font-semibold text-foreground">
-                    <span>{recurring ? "Monthly total" : "Total, all in"}</span>
-                    <span className="whitespace-nowrap">{priceText(totalLow, totalHigh)}{periodSuffix}</span>
+                    <span>Total, all in</span>
+                    <span className="whitespace-nowrap">{priceText(totalLow, totalHigh)}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground pt-1">
-                    Nothing is charged today. The crew confirms the final price on site before
-                    anything goes on the truck.
+                    Nothing is charged today. Final price is weighed on our certified scale before
+                    work starts.
                   </p>
                 </div>
               </CardContent>
