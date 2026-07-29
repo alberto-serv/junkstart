@@ -143,7 +143,7 @@ export function ScheduleWidget() {
   if (submitted) {
     return (
       <div className="w-full min-w-0 overflow-hidden rounded-lg border border-line bg-white shadow-brand">
-        <div className="bg-brand px-6 py-5">
+        <div className="bg-flame px-6 py-5">
           <h2 className="disp text-xl text-white">You&apos;re on the Schedule</h2>
         </div>
         <div className="space-y-5 p-6 text-center">
@@ -173,7 +173,7 @@ export function ScheduleWidget() {
   return (
     <div ref={rootRef} className="w-full min-w-0 overflow-hidden rounded-lg border border-line bg-white shadow-brand">
       {/* Header */}
-      <div className="bg-brand px-6 py-5">
+      <div className="bg-flame px-6 py-5">
         <h2 className="disp text-xl text-white">Book Your Omaha Pickup</h2>
         <p className="mt-1 text-sm text-white/80">
           Three quick steps. No payment today — the crew prices it on site.

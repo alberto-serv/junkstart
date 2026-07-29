@@ -4,22 +4,16 @@ import { useEffect, useState } from "react"
 import { CalendarDays } from "lucide-react"
 import { BOOKING_ID, brand, loc, scrollToBooking } from "./config"
 
-/* ── Hero / final-band CTA ────────────────────────────────────────────────────
-   Desktop only in the hero: on mobile the module sits directly below the fold
-   and the sticky bar handles commitment, so a third button would just be noise
-   pushing the module further down. */
-export function HeroCta({ variant = "dark" }: { variant?: "dark" | "light" }) {
+/* ── Final-band CTA ───────────────────────────────────────────────────────────
+   The page's only CTA button outside the module itself. The hero deliberately
+   has none: the module sits right beside the hero copy and IS the call to
+   action there, so a button pointing at it would be pointing at itself. */
+export function BookCta() {
   return (
-    <div className={variant === "dark" ? "mt-7 hidden lg:block" : "inline-block"}>
-      <button
-        type="button"
-        onClick={scrollToBooking}
-        className="btn-flame text-base"
-      >
-        {brand.ctaLabel}
-        <span className="text-[13.5px] font-semibold opacity-75">· {loc.nextSlot}</span>
-      </button>
-    </div>
+    <button type="button" onClick={scrollToBooking} className="btn-flame text-base">
+      {brand.ctaLabel}
+      <span className="text-[13.5px] font-semibold opacity-75">· {loc.nextSlot}</span>
+    </button>
   )
 }
 

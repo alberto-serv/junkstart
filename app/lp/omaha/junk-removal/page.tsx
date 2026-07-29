@@ -6,7 +6,7 @@ import {
 import { LpHeader, LpFooter } from "./lp-chrome"
 import { ScheduleWidget } from "./schedule-widget"
 import { Faq } from "./faq"
-import { HeroCta, StickyBookBar } from "./cta"
+import { BookCta, StickyBookBar } from "./cta"
 import {
   WRAP, BOOKING_ID, loc, brand, HERO_INCLUDES, REVIEWS,
 } from "./config"
@@ -36,6 +36,12 @@ export const metadata: Metadata = {
       and must peek above the fold — that peek is the scroll cue and the reason
       the page converts. Nothing decorative goes between the H1 and the module.
    ============================================================ */
+
+const HOW_IT_WORKS = [
+  { title: "Pick a window", copy: "Choose a day and arrival window. Takes about two minutes." },
+  { title: "We show up", copy: "A uniformed crew texts you when they're 30 minutes out." },
+  { title: "You approve the price", copy: "Quoted on site before anything goes on the truck." },
+]
 
 const WHY = [
   { icon: Clock, title: "Same-week windows", copy: `Most ${loc.city} pickups land within two to three days, with same-day slots when a route has room.` },
@@ -115,7 +121,20 @@ export default function OmahaJunkRemovalPage() {
               <span>{loc.licenseLine}</span>
             </div>
 
-            <HeroCta />
+            {/* Desktop only — the module is the hero's call to action, sitting
+                right beside this copy, so there's no CTA button here. On mobile
+                these three would push the module below the fold. */}
+            <ol className="mt-8 hidden gap-6 border-t border-white/15 pt-7 lg:grid lg:grid-cols-3">
+              {HOW_IT_WORKS.map((s, i) => (
+                <li key={s.title}>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-flame text-[12.5px] font-extrabold text-white">
+                    {i + 1}
+                  </span>
+                  <p className="mt-2.5 text-[14.5px] font-bold text-white">{s.title}</p>
+                  <p className="mt-1 text-[13px] leading-snug text-[#bed3f7]">{s.copy}</p>
+                </li>
+              ))}
+            </ol>
           </div>
 
           {/* Not sticky: the module is always the taller of the two columns, so
@@ -278,7 +297,7 @@ export default function OmahaJunkRemovalPage() {
             Grab a pickup window in about two minutes. Nothing is charged today.
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <HeroCta variant="light" />
+            <BookCta />
             <a
               href={PHONE_TEL}
               className="text-[15px] font-bold text-white underline-offset-4 transition-opacity hover:opacity-80 hover:underline"
