@@ -1,0 +1,242 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── JunkStart brand tokens, mapped to the shadcn HSL token layer ──
+       Hex equivalents (from the brand guidelines):
+       brand blue #1863DC · flame #F15D2A · text #474747 · body #5A5A5A
+       page #F7F6F6 · sand #E9E1CC · line #E3E1DE                       */
+
+    /* Off-white page wash — the brand's background is #F7F6F6, not pure white */
+    --background: 0 0% 97%;
+    --foreground: 0 0% 28%; /* #474747 */
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 28%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 28%;
+
+    /* Primary — JunkStart Blue. Text on blue is white. */
+    --primary: 218 80% 48%; /* #1863DC */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary — brand sand */
+    --secondary: 44 39% 86%; /* #E9E1CC */
+    --secondary-foreground: 0 0% 28%;
+
+    --muted: 40 12% 95%;
+    --muted-foreground: 0 0% 45%;
+
+    /* Accent — flame (the brand's link + emphasis color) */
+    --accent: 15 87% 56%; /* #F15D2A */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 36 8% 88%; /* #E3E1DE */
+    --input: 36 8% 84%;
+    --ring: 218 80% 48%;
+
+    --radius: 0.375rem; /* 6px — brand border radius */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    font-size: 18px; /* brand body size */
+    line-height: 1.62;
+  }
+  /* Headings ride Poppins — the brand's display face. Sentence case, tight
+     leading, heavy weight. Body copy stays Open Sans. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+  }
+}
+
+/* ── JunkStart brand component primitives ─────────────────────────────────── */
+@layer components {
+  /* Display type — every heading, page/section/card title, and button label.
+     Poppins Bold, sentence case, tight leading. */
+  .disp {
+    font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+  }
+
+  /* Buttons — display font, 2px radius (brand primary button spec). */
+  .btn-pill {
+    @apply disp inline-flex items-center justify-center gap-2.5 rounded-btn px-8 py-[15px] text-base leading-none transition-all duration-150;
+  }
+  .btn-pill:hover {
+    transform: translateY(-1px);
+  }
+  .btn-pill:disabled {
+    @apply opacity-45;
+    transform: none;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+  /* Primary CTA — brand blue on white text. */
+  .btn-brand {
+    @apply btn-pill bg-brand text-white shadow-brand-sm;
+  }
+  .btn-brand:hover {
+    @apply bg-brand-deep;
+  }
+  /* Flame CTA — the estimator's forward action. */
+  .btn-flame {
+    @apply btn-pill bg-flame text-white shadow-flame-glow;
+  }
+  .btn-flame:hover {
+    @apply bg-flame-deep;
+  }
+  /* Brand secondary button — white fill, 8px radius, 4px inset flame ring. */
+  .btn-ghost-brand {
+    @apply btn-pill rounded-lg bg-white text-ink shadow-flame-inset;
+  }
+  .btn-ghost-brand:hover {
+    @apply bg-flame text-white;
+  }
+
+  /* Numbered step badge — flame circle, white numeral. */
+  .step-num {
+    @apply inline-flex items-center justify-center rounded-full bg-flame text-white font-extrabold;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    font-size: 15px;
+  }
+
+  /* Eyebrow / overline — uppercase, tracked. */
+  .eyebrow {
+    @apply font-bold uppercase text-muted-foreground;
+    letter-spacing: 0.14em;
+    font-size: 11px;
+  }
+
+  /* Brand pill badge — flame fill, white text. */
+  .brand-badge {
+    @apply inline-block rounded-full bg-flame uppercase text-white font-extrabold;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+  }
+}
+
+/* ── Premium motion primitives (used by the /cleanouts landing page) ─────── */
+@layer utilities {
+  /* Scroll-reveal: hidden until .is-visible is toggled by an observer */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Edge-to-edge fade mask for marquees */
+  .marquee-mask {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 8%,
+      black 92%,
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 8%,
+      black 92%,
+      transparent
+    );
+  }
+
+  .animate-marquee {
+    animation: marquee 32s linear infinite;
+  }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  .animate-float-slow {
+    animation: float 9s ease-in-out infinite;
+  }
+  .text-gradient {
+    background: linear-gradient(
+      92deg,
+      hsl(15 87% 56%),
+      hsl(15 87% 66%),
+      hsl(15 87% 56%)
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 6s linear infinite;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .animate-marquee,
+  .animate-float,
+  .animate-float-slow,
+  .text-gradient {
+    animation: none;
+  }
+}
