@@ -75,10 +75,23 @@ const config = {
         pill: "999px",
       },
       backgroundImage: {
-        // Brand washes — sand (secondary) into a cool blue tint
-        "brand-band": "linear-gradient(100deg,#F6F1E2 0%,#FFFFFF 52%,#E4EDFB 100%)",
-        "brand-band-soft": "linear-gradient(100deg,#FBF8EF 0%,#FFFFFF 50%,#F0F5FD 100%)",
-        "brand-select": "linear-gradient(180deg,#FFF7F3,#FFF1EA)",
+        // Brand washes.
+        //
+        // Deliberately NOT the inherited three-stop diagonal cross-fade
+        // (warm -> white -> cool on a 100deg axis). That soft pastel sweep reads
+        // as the brand it came from no matter which hexes are plugged into it.
+        //
+        // JunkStart is high contrast and two-colour: bold blue, hot orange, on a
+        // #F7F6F6 page. So these are corner glows of the two brand hues over the
+        // brand page colour, which puts both on screen and keeps the middle of
+        // the band clean for text.
+        "brand-band":
+          "radial-gradient(560px 260px at 100% 0%, rgba(241,93,42,0.22), transparent 64%), radial-gradient(480px 250px at 0% 100%, rgba(24,99,220,0.15), transparent 62%), linear-gradient(135deg,#FFFFFF 0%,#F3F6FC 100%)",
+        "brand-band-soft":
+          "radial-gradient(1150px 500px at 8% -18%, rgba(24,99,220,0.20), transparent 64%), radial-gradient(880px 460px at 96% -12%, rgba(241,93,42,0.18), transparent 66%), linear-gradient(180deg,#FFFFFF 0%,#F5F4F4 100%)",
+        // Selected state: a flame tint with enough saturation to read as chosen
+        // next to the 2px flame border, rather than an off-white.
+        "brand-select": "linear-gradient(180deg,#FFF3EC 0%,#FFE6D9 100%)",
       },
       boxShadow: {
         "brand-sm": "0 6px 20px rgba(24,99,220,.07)",

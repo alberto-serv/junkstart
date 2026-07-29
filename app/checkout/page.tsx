@@ -268,7 +268,7 @@ export default function CheckoutPage() {
             </CardHeader>
             <CardContent>
               {hasQuote ? (
-                <div className="bg-brand-band border border-[#E4DBC2] p-6 rounded-lg">
+                <div className="bg-brand-band border border-line p-6 rounded-lg">
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-1">
                     <h3 className="text-[19px] font-semibold text-ink">{scenarioLabel}</h3>
                     <div className="flex items-baseline gap-1">
@@ -296,7 +296,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-brand-band border border-[#E4DBC2] p-6 rounded-lg">
+                <div className="bg-brand-band border border-line p-6 rounded-lg">
                   <p className="text-sm text-ink">
                     No estimate needed. Pick a time below and a crew lead will come out, look at
                     the pile, and hand you a written all-in price. Free, with no obligation.
