@@ -111,29 +111,35 @@ export default function HomePage() {
 
             {/* The tally sits directly under the cards as the alternative to
                 picking one, rather than buried in a later step. */}
+            {/* Centred under the card grid. The open estimator keeps its own
+                left-aligned layout, so only the two collapsed states centre. */}
             <div className="mt-5">
               {customLbs ? (
-                <div className="inline-flex items-center gap-2 rounded-full border-2 border-flame bg-brand-select px-4 py-2 text-[13.5px] font-semibold text-ink">
-                  Your tally: ~{customLbs.lowLbs.toLocaleString()} to {customLbs.highLbs.toLocaleString()} lbs
-                  <button
-                    type="button"
-                    aria-label="Clear tally and pick a card instead"
-                    onClick={() => setCustomLbs(null)}
-                    className="text-flame transition-colors hover:text-flame-deep"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                <div className="text-center">
+                  <span className="inline-flex items-center gap-2 rounded-full border-2 border-flame bg-brand-select px-4 py-2 text-[13.5px] font-semibold text-ink">
+                    Your tally: ~{customLbs.lowLbs.toLocaleString()} to {customLbs.highLbs.toLocaleString()} lbs
+                    <button
+                      type="button"
+                      aria-label="Clear tally and pick a card instead"
+                      onClick={() => setCustomLbs(null)}
+                      className="text-flame transition-colors hover:text-flame-deep"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </span>
                 </div>
               ) : tallyOpen ? (
                 <ItemEstimator onApply={applyTally} onCancel={() => setTallyOpen(false)} />
               ) : (
-                <button
-                  type="button"
-                  onClick={() => setTallyOpen(true)}
-                  className="text-sm font-bold text-flame transition-colors hover:text-flame-deep"
-                >
-                  Know exactly what you&apos;ve got? Tally your items instead.
-                </button>
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => setTallyOpen(true)}
+                    className="text-sm font-bold text-flame transition-colors hover:text-flame-deep"
+                  >
+                    Know exactly what you&apos;ve got? Tally your items instead.
+                  </button>
+                </div>
               )}
             </div>
           </div>
