@@ -30,6 +30,8 @@ const config = {
         flame: { DEFAULT: "#F15D2A", deep: "#D14A1B" },
         sand: { DEFAULT: "#E9E1CC", soft: "#F4EFE2" },
         ink: "#474747",
+        /** Near-black neutral from the brand guidelines. Site footer. */
+        charcoal: "#323233",
         body: "#5A5A5A",
         line: { DEFAULT: "#E3E1DE", soft: "#EDEBE8" },
         border: "hsl(var(--border))",
