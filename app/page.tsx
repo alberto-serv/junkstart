@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   AlertTriangle, Minus, Plus, Scale, Shield, Star, X,
@@ -21,6 +21,11 @@ export default function HomePage() {
   // Set by the item tally. When present it overrides the scenario card.
   const [customLbs, setCustomLbs] = useState<{ lowLbs: number; highLbs: number } | null>(null)
   const [tallyOpen, setTallyOpen] = useState(false)
+  // Drives the mobile price bar: it stands down while the full result card is
+  // on screen, so the price is never rendered twice at once.
+  const resultRef = useRef<HTMLDivElement>(null)
+  const [resultInView, setResultInView] = useState(false)
+  const [footerInView, setFooterInView] = useState(false)
 
   const activeScenario = SCENARIOS.find((s) => s.id === scenario) ?? null
   const bounds =
@@ -30,6 +35,8 @@ export default function HomePage() {
   // Aggregates get their own callout with their own routes, so the price panel
   // stands down rather than showing a number we would have to walk back.
   const showResult = Boolean(quote) && !flags.hasAggregates
+
+  const activeLabel = customLbs ? "Your tally" : activeScenario?.label ?? ""
 
   const pickScenario = (id: ScenarioId) => {
     setScenario(id)
@@ -42,6 +49,33 @@ export default function HomePage() {
     setScenario(null)
     setTallyOpen(false)
   }
+
+  useEffect(() => {
+    const el = resultRef.current
+    if (!el) {
+      setResultInView(false)
+      return
+    }
+    const io = new IntersectionObserver(([entry]) => setResultInView(entry.isIntersecting), {
+      rootMargin: "-80px 0px -140px 0px",
+    })
+    io.observe(el)
+    return () => io.disconnect()
+    // The result element only exists once there is something to price.
+  }, [showResult])
+
+  // The shared footer renders outside this page's root, so bottom padding here
+  // cannot push it clear of a fixed bar. Retract at the footer instead: by then
+  // the customer has scrolled past the price anyway.
+  useEffect(() => {
+    const el = document.querySelector("footer")
+    if (!el) return
+    const io = new IntersectionObserver(([entry]) => setFooterInView(entry.isIntersecting))
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  const barHidden = resultInView || footerInView
 
   const handleCheckout = () => {
     if (!quote || !bounds) return
@@ -61,7 +95,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-[116px] lg:pb-0">
 
       {/* ── Hero ───────────────────────────────────────────────────────── */}
       <section className="bg-brand-band-soft border-b border-line-soft">
@@ -199,7 +233,7 @@ export default function HomePage() {
       {showResult && quote && bounds && (
         <section className="border-t border-border bg-white">
           <div className="container mx-auto px-4 py-12 md:py-14">
-            <div className="max-w-4xl mx-auto">
+            <div ref={resultRef} className="max-w-4xl mx-auto">
               {quote.onSiteRequired ? (
                 <div className="rounded-lg border border-line bg-brand-band p-8 shadow-brand-sm md:px-9">
                   <p className="eyebrow mb-2.5">Free on-site estimate</p>
@@ -268,6 +302,57 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── Mobile price bar ───────────────────────────────────────────
+          The live price follows the customer down the page on a phone, so
+          toggling a flag in step 2 shows its effect without scrolling. Hidden
+          once the full result card is on screen, and on desktop, where the card
+          is already in view. */}
+      {showResult && quote && bounds && (
+        <div
+          className={`fixed inset-x-0 bottom-0 z-50 border-t border-line bg-white/95 px-4 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-6px_24px_rgba(21,38,68,0.14)] backdrop-blur transition-transform duration-300 lg:hidden ${
+            barHidden ? "translate-y-[130%]" : "translate-y-0"
+          }`}
+          aria-hidden={barHidden}
+        >
+          {quote.onSiteRequired ? (
+            <>
+              <p className="mb-2 text-[13px] text-muted-foreground">
+                {activeLabel}
+                <span className="font-semibold text-ink"> &middot; free on-site estimate</span>
+              </p>
+              <button
+                type="button"
+                tabIndex={barHidden ? -1 : 0}
+                onClick={() => router.push("/checkout?book=1")}
+                className="btn-flame w-full text-base"
+              >
+                Book a Free On-Site Estimate
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="mb-2 flex items-baseline justify-between gap-3">
+                <span className="truncate text-[13px] text-muted-foreground">
+                  {activeLabel} &middot; ~{bounds.lowLbs.toLocaleString()} to{" "}
+                  {bounds.highLbs.toLocaleString()} lbs
+                </span>
+                <span className="shrink-0 text-[19px] font-extrabold leading-none text-ink">
+                  ${rangeStr(quote.low, quote.high)}
+                </span>
+              </div>
+              <button
+                type="button"
+                tabIndex={barHidden ? -1 : 0}
+                onClick={handleCheckout}
+                className="btn-flame w-full text-base"
+              >
+                Book This Pickup
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {/* ── Bottom CTA ─────────────────────────────────────────────────── */}
       <section className="border-t border-border bg-background">
