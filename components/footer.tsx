@@ -2,11 +2,17 @@ import Link from "next/link"
 import Image from "next/image"
 import { PHONE, PHONE_TEL, SERVICE_CITY } from "@/lib/junk-data"
 
-export function Footer() {
+/**
+ * `bottomBarSpace` adds mobile bottom padding for routes that render a fixed
+ * bottom bar. The padding has to live here rather than on the page, because the
+ * footer sits outside the page's root and nothing inside it can push the end of
+ * the document clear of a fixed element.
+ */
+export function Footer({ bottomBarSpace = false }: { bottomBarSpace?: boolean }) {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-charcoal text-[#b4b4b6]">
+    <footer className={`bg-charcoal text-[#b4b4b6] ${bottomBarSpace ? "pb-[104px] lg:pb-0" : ""}`}>
       <div className="container mx-auto px-6 py-14 md:px-8">
         <div className="flex flex-wrap justify-between gap-10 border-b border-white/[0.16] pb-8">
           <div className="max-w-[420px]">
