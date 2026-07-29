@@ -95,10 +95,6 @@ export const REVIEWS = [
    whose module never shows a number shouldn't discuss dollar amounts either. --- */
 export const FAQS = [
   {
-    q: "How does pricing work if I don't see a price here?",
-    a: "Junk removal is priced by volume — how much of the truck your pile actually fills — and there's no honest way to know that until someone sees it. So the crew looks at the pile, quotes you an all-in number on the spot, and waits for your yes before anything is loaded. Booking here costs nothing and commits you to nothing.",
-  },
-  {
     q: "Do I have to move everything outside first?",
     a: "No. Full-service is the default: the crew carries everything out of the garage, basement, attic or upstairs bedroom for you. If your pile is already at the curb, mention it in the item list — curbside jobs are cheaper and we'll reflect that in the on-site quote.",
   },

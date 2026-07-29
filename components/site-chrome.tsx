@@ -4,10 +4,10 @@ import { usePathname } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
-// Most of the site shares one minimal header/footer (see layout.tsx). Standalone
-// marketing clones like /landing and the per-market /lp pages ship their own full
-// navigation + footer, so we skip the shared chrome and hand them raw children.
-const STANDALONE_PREFIXES = ["/landing", "/lp"]
+// Most of the site shares one minimal header/footer (see layout.tsx). The
+// per-market /lp landing pages ship their own full navigation + footer, so we
+// skip the shared chrome for those routes and hand them the raw children.
+const STANDALONE_PREFIXES = ["/lp"]
 
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()

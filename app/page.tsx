@@ -4,11 +4,11 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
-  AlertTriangle, Mail, Minus, Plus, Scale, Shield, Star, X,
+  AlertTriangle, Minus, Plus, Scale, Shield, Star, X,
 } from "lucide-react"
 import {
   SCENARIOS, getQuote, lbsFromItems,
-  ITEM_WEIGHTS, AGGREGATES_WARNING, AGGREGATES_EMAIL, PHONE, rangeStr,
+  ITEM_WEIGHTS, AGGREGATES_WARNING, PHONE, rangeStr,
   type Scenario, type ScenarioId, type QuoteFlags,
 } from "@/lib/junk-data"
 
@@ -67,12 +67,15 @@ export default function HomePage() {
       <section className="bg-brand-band-soft border-b border-line-soft">
         <div className="container mx-auto px-4 pt-14 pb-14 md:pt-[60px] md:pb-14">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="disp text-ink mx-auto max-w-[18ch] text-[clamp(36px,5.4vw,58px)]">
-              Pay for What It Weighs. Nothing More.
+            <h1 className="disp text-ink mx-auto max-w-[16ch] text-[clamp(36px,5.4vw,58px)]">
+              Pay-By-Weight Junk Removal
             </h1>
-            <p className="mt-[18px] text-body text-lg max-w-[52ch] mx-auto">
-              Every load goes on a certified onboard scale, so you see the exact price before
-              the crew starts. One tap below gives you an honest range right now.
+            <p className="mt-[18px] text-body text-lg max-w-[54ch] mx-auto">
+              Garages fill up slowly. A few boxes here. Old furniture there. Before long, the
+              space that was supposed to hold your car is holding everything else.
+            </p>
+            <p className="mt-3 text-body text-lg max-w-[54ch] mx-auto">
+              That&apos;s where JunkStart comes in.
             </p>
             <button
               type="button"
@@ -85,13 +88,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── The question ───────────────────────────────────────────────── */}
+      {/* ── Step 1: what are we hauling ────────────────────────────────── */}
       <section className="border-t border-border bg-white">
         <div className="container mx-auto px-4 py-12 md:py-14">
           <div className="max-w-5xl mx-auto">
             <StepHeader
               step={1}
-              title="What does it look like?"
+              title="What do you need us to haul away?"
               subtitle="Pick the closest fit. Nobody measures junk, everybody recognizes it."
             />
 
@@ -106,64 +109,11 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* ── Flags ──────────────────────────────────────────────── */}
-            <div className="mt-8 rounded-lg border border-line bg-sand-soft/60 p-5">
-              <p className="text-sm font-bold text-ink">Any of these in the pile?</p>
-              <div className="mt-3 flex flex-wrap items-center gap-2.5">
-                <CountChip
-                  label="Mattresses"
-                  value={flags.mattressCount}
-                  max={4}
-                  onChange={(n) => setFlags((f) => ({ ...f, mattressCount: n }))}
-                />
-                <CountChip
-                  label="Tires"
-                  value={flags.tireCount}
-                  max={8}
-                  onChange={(n) => setFlags((f) => ({ ...f, tireCount: n }))}
-                />
-                <button
-                  type="button"
-                  aria-pressed={flags.hasAggregates}
-                  onClick={() => setFlags((f) => ({ ...f, hasAggregates: !f.hasAggregates }))}
-                  className={`rounded-full border-2 px-4 py-2 text-[13.5px] font-semibold transition-colors ${
-                    flags.hasAggregates
-                      ? "border-flame bg-flame text-white"
-                      : "border-line bg-white text-ink hover:border-flame"
-                  }`}
-                >
-                  Dirt, concrete, brick or tile
-                </button>
-              </div>
-
-              {flags.hasAggregates && (
-                <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
-                  <div className="flex items-start gap-2.5">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                    <p className="text-[13.5px] leading-relaxed text-amber-900">{AGGREGATES_WARNING}</p>
-                  </div>
-                  <div className="mt-3.5 flex flex-col gap-2.5 sm:flex-row">
-                    <a
-                      href={`mailto:${AGGREGATES_EMAIL}?subject=Photos%20for%20a%20heavy%20debris%20quote`}
-                      className="btn-flame text-sm"
-                    >
-                      <Mail className="h-4 w-4" />
-                      Send photos
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => router.push("/checkout?book=1")}
-                      className="btn-ghost-brand text-sm"
-                    >
-                      Book a free on-site look
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Item tally fallback ─────────────────────────────── */}
+            {/* The tally sits directly under the cards as the alternative to
+                picking one, rather than buried in a later step. */}
+            <div className="mt-5">
               {customLbs ? (
-                <div className="mt-4 inline-flex items-center gap-2 rounded-full border-2 border-flame bg-brand-select px-4 py-2 text-[13.5px] font-semibold text-ink">
+                <div className="inline-flex items-center gap-2 rounded-full border-2 border-flame bg-brand-select px-4 py-2 text-[13.5px] font-semibold text-ink">
                   Your tally: ~{customLbs.lowLbs.toLocaleString()} to {customLbs.highLbs.toLocaleString()} lbs
                   <button
                     type="button"
@@ -180,12 +130,61 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => setTallyOpen(true)}
-                  className="mt-4 text-sm font-bold text-flame transition-colors hover:text-flame-deep"
+                  className="text-sm font-bold text-flame transition-colors hover:text-flame-deep"
                 >
                   Know exactly what you&apos;ve got? Tally your items instead.
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Step 2: flags, the last thing we ask ───────────────────────── */}
+      <section className="border-t border-border bg-background">
+        <div className="container mx-auto px-4 py-12 md:py-14">
+          <div className="max-w-3xl mx-auto">
+            <StepHeader
+              step={2}
+              title="Any of these in the pile?"
+              subtitle="These carry their own disposal fees, so we add them up front rather than on the day."
+            />
+
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <CountChip
+                label="Mattresses"
+                value={flags.mattressCount}
+                max={4}
+                onChange={(n) => setFlags((f) => ({ ...f, mattressCount: n }))}
+              />
+              <CountChip
+                label="Tires"
+                value={flags.tireCount}
+                max={8}
+                onChange={(n) => setFlags((f) => ({ ...f, tireCount: n }))}
+              />
+              <button
+                type="button"
+                aria-pressed={flags.hasAggregates}
+                onClick={() => setFlags((f) => ({ ...f, hasAggregates: !f.hasAggregates }))}
+                className={`rounded-full border-2 px-4 py-2 text-[13.5px] font-semibold transition-colors ${
+                  flags.hasAggregates
+                    ? "border-flame bg-flame text-white"
+                    : "border-line bg-white text-ink hover:border-flame"
+                }`}
+              >
+                Dirt, concrete, brick or tile
+              </button>
+            </div>
+
+            {flags.hasAggregates && (
+              <div className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-4">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                  <p className="text-[13.5px] leading-relaxed text-amber-900">{AGGREGATES_WARNING}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -222,10 +221,6 @@ export default function HomePage() {
                         </span>
                         <span className="text-[15px] font-semibold text-body">all in</span>
                       </div>
-                      <p className="mt-2 text-[13px] text-muted-foreground">
-                        Based on ~{bounds.lowLbs.toLocaleString()} to {bounds.highLbs.toLocaleString()} lbs
-                        at your address
-                      </p>
                       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
                         {quote.minApplied && (
                           <span className="text-[12px] font-semibold text-flame">
@@ -238,13 +233,6 @@ export default function HomePage() {
                           </span>
                         )}
                       </div>
-                      {quote.surcharges > 0 && (
-                        <p className="mt-2 text-[12.5px] text-muted-foreground">
-                          Includes ${quote.surcharges.toLocaleString()} in disposal surcharges
-                          {flags.mattressCount > 0 && ` · ${flags.mattressCount} mattress${flags.mattressCount === 1 ? "" : "es"}`}
-                          {flags.tireCount > 0 && ` · ${flags.tireCount} tire${flags.tireCount === 1 ? "" : "s"}`}
-                        </p>
-                      )}
                     </div>
                     <button onClick={handleCheckout} className="btn-flame shrink-0">
                       Book This Pickup
@@ -252,15 +240,10 @@ export default function HomePage() {
                   </div>
 
                   <div className="border-t border-line-soft bg-white/60 px-8 py-5 md:px-9">
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-flame/10">
-                        <Scale className="h-[18px] w-[18px] text-flame" />
-                      </span>
-                      <p className="text-[13.5px] leading-relaxed text-body">
-                        Your exact price comes off a certified scale before the crew starts. The
-                        estimate sets expectations. The scale sets the price.
-                      </p>
-                    </div>
+                    <p className="text-[13.5px] leading-relaxed text-body">
+                      Your exact price comes off a certified scale before the crew starts. The
+                      estimate sets expectations. The scale sets the price.
+                    </p>
                   </div>
                 </div>
               )}

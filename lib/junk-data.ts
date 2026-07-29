@@ -25,9 +25,6 @@ export const PHONE = "(888) 586-5782"
 export const PHONE_TEL = "tel:8885865782"
 export const SERVICE_CITY = "Charlotte, NC"
 
-/** Where aggregate-load photos go, per the aggregates route below. */
-export const AGGREGATES_EMAIL = "info@junkstart.com"
-
 // ─── 1. Market configuration ─────────────────────────────────────────────────
 
 /**
@@ -146,10 +143,11 @@ export const NO_FLAGS: QuoteFlags = { mattressCount: 0, tireCount: 0, hasAggrega
 
 /**
  * Shown the moment the aggregates box is ticked. Aggregates break every
- * household weight estimate on the page, so we say so plainly and hand over a
- * route rather than quoting a number we would have to walk back on site.
+ * household weight estimate on the page, so we say so plainly rather than
+ * quoting a number we would have to walk back on site.
  */
-export const AGGREGATES_WARNING = `Dirt, concrete, rock, tile and brick weigh far more than household junk. One pickup bed of dirt alone runs 2,000 lbs or more, and concrete 2,500 to 3,500 lbs, so the estimates above do not apply to your load. Send photos to ${AGGREGATES_EMAIL} or book a free on-site look and we'll price it from what's actually there.`
+export const AGGREGATES_WARNING =
+  "Dirt, concrete, rock, tile and brick weigh far more than household junk. One pickup bed of dirt alone runs 2,000 lbs or more, and concrete 2,500 to 3,500 lbs, so the estimates above do not apply. Loads like this are quoted on site."
 
 // ─── 5. Item weights ─────────────────────────────────────────────────────────
 
@@ -308,11 +306,11 @@ export function getQuote(
 
 // ─── Legacy (Omaha LP + contact form only, do not use in the estimator) ──────
 //
-// `app/lp/omaha/junk-removal/page.tsx` is intentionally frozen and still reads
-// JOBS (filtering on consultationOnly, rendering name/tagline/icon) and
-// TRUCK_CAPACITY. `app/contact/page.tsx` and `app/landing/industries.tsx` also
-// read JOBS. Everything that priced off these types is gone; what remains is a
-// label set. Nothing new in the estimator may import from this block.
+// `app/lp/omaha/junk-removal/page.tsx` still reads JOBS (filtering on
+// consultationOnly, rendering name/tagline/icon) and TRUCK_CAPACITY, and
+// `app/contact/page.tsx` reads JOBS for its job-type dropdown. Everything that
+// priced off these types is gone; what remains is a label set. Nothing in the
+// estimator may import from this block.
 
 /**
  * Pricing archetypes. Every job type maps to one of these, which drove its
@@ -371,5 +369,5 @@ export const JOBS: Job[] = [
   { id: "other", name: "Something Else", shortName: "Other", icon: HelpCircle, profile: "standard", featured: false, consultationOnly: true, tagline: "Tell us what you've got" },
 ]
 
-/** Cubic yards in one JunkStart truck. Read by the Omaha LP and /cleanouts. */
+/** Cubic yards in one JunkStart truck. Read by the Omaha LP only. */
 export const TRUCK_CAPACITY = 16

@@ -10,18 +10,19 @@ scale, at a rate the local franchise sets.
 The homepage (`app/page.tsx`) asks **one question** and produces an honest price range
 before anyone is dispatched.
 
-1. **What does it look like?** Eight scenario cards, from "a few items" to "a whole house
+1. **What do you need us to haul away?** Eight scenario cards, from "a few items" to "a whole house
    or worse", each carrying a weight band. Nobody knows what their junk weighs, but
    everybody recognises the pile that looks like theirs.
-2. **A single flag row.** Mattress and tire steppers, which apply the market's per-item
-   disposal surcharges, and an aggregates toggle for dirt, concrete, brick and tile.
+2. **Any of these in the pile?** Asked last, once the load is described: mattress and tire
+   steppers, which apply the market's per-item disposal surcharges, and an aggregates
+   toggle for dirt, concrete, brick and tile.
 3. **A live result.** The range appears as soon as a card is picked, alongside the scale
    promise: the estimate sets expectations, the scale sets the price.
 
-Two escape hatches sit inside the same step. Customers who would rather list exactly what
-they have can **tally their items**, which sums `ITEM_WEIGHTS` into a weight band and
-overrides the card. Customers with **aggregates** get a callout instead of a number,
-routing to photos or a free on-site look, because a pickup bed of dirt alone runs 2,000 lbs
+Customers who would rather list exactly what they have can **tally their items** from a
+link directly under the cards, which sums `ITEM_WEIGHTS` into a weight band and overrides
+the card. Customers with **aggregates** get a callout instead of a number,
+saying the load will be quoted on site, because a pickup bed of dirt alone runs 2,000 lbs
 and would make every household estimate on the page wrong.
 
 Anything at or above `ON_SITE_THRESHOLD_LBS` (1,500 lbs) stops quoting online and books a
@@ -33,11 +34,9 @@ and `/checkout/confirmation` (a printable receipt). Both read the same params th
 emits: `scenario`, `lowLbs`, `highLbs`, `mattressCount`, `tireCount`, `low`, `high`,
 `minApplied`, `discountApplied`, `surcharges`.
 
-Marketing routes: `/landing`, a standalone local-market page with its own nav and footer;
-`/cleanouts`, a service landing for estate and property cleanouts whose primary CTA books
-the on-site estimate, since a whole property is past the online-quote threshold by
-definition; and `/lp/omaha/junk-removal`, a paid landing page with an embedded three-step
-scheduling module (see **Frozen routes** below).
+One marketing route ships alongside the estimator: `/lp/omaha/junk-removal`, a paid
+landing page with an embedded three-step scheduling module that books a pickup window
+without ever showing a price.
 
 ## Pricing model
 
@@ -97,13 +96,14 @@ weights are national and only the prices are local:
 | Fill-in-the-blank market box | `MarketConfig` + `MARKET` | `getQuote()`, resolved by ZIP in production |
 | "How to build a quote" steps | `getQuote()` | Homepage, checkout, confirmation |
 
-## Frozen routes
+## Legacy exports
 
-`app/lp/omaha/junk-removal/**` is **intentionally frozen** and must not be edited. It runs
-on the legacy exports at the bottom of `lib/junk-data.ts` (`JOBS`, `Job`, `JobId`,
-`ProfileId`), kept alive under a clearly marked banner for that page, `/contact`'s job
-dropdown and `/landing/industries`. Nothing in the estimator may import from that block, and
-the pricing machinery that once consumed it is gone.
+`app/lp/omaha/junk-removal/**` runs on the legacy exports at the bottom of
+`lib/junk-data.ts` (`JOBS`, `Job`, `JobId`, `ProfileId`, `TRUCK_CAPACITY`), kept alive under
+a clearly marked banner for that page and `/contact`'s job dropdown. Nothing in the
+estimator may import from that block, and the pricing machinery that once consumed it is
+gone. Treat that route as change-on-request only: it has been tuned by hand and does not
+follow the weight flow.
 
 ## Branding
 
