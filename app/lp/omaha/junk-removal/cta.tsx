@@ -1,8 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { CalendarDays, Phone } from "lucide-react"
-import { PHONE, PHONE_TEL } from "@/lib/junk-data"
+import { CalendarDays } from "lucide-react"
 import { BOOKING_ID, brand, loc, scrollToBooking } from "./config"
 
 /* ── Hero / final-band CTA ────────────────────────────────────────────────────
@@ -50,19 +49,12 @@ export function StickyBookBar() {
       }`}
       aria-hidden={!show}
     >
-      <div className="flex items-center gap-2.5">
-        <a
-          href={PHONE_TEL}
-          aria-label={`Call ${PHONE}`}
-          className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-lg border-[1.5px] border-line text-ink transition-colors hover:border-flame hover:text-flame"
-        >
-          <Phone className="h-5 w-5" />
-        </a>
+      <div className="flex items-center">
         <button
           type="button"
           onClick={scrollToBooking}
           tabIndex={show ? 0 : -1}
-          className="flex h-[50px] flex-1 items-center justify-center gap-2 rounded-lg bg-flame font-display text-[15.5px] font-bold text-white shadow-flame-glow"
+          className="flex h-[50px] w-full items-center justify-center gap-2 rounded-lg bg-flame font-display text-[15.5px] font-bold text-white shadow-flame-glow"
         >
           <CalendarDays className="h-[18px] w-[18px]" />
           {brand.ctaLabel}
