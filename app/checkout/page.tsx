@@ -24,12 +24,8 @@ interface AddOn { id: string; name: string; price: number; description: string }
 
 function buildAddOns(): AddOn[] {
   return [
-    { id: "freon", name: "Freon Appliance Recovery", price: 45, description: "Refrigerators, freezers and window AC units need certified refrigerant recovery before they can be scrapped. Includes the EPA-compliant recovery and documentation." },
-    { id: "ewaste", name: "Certified E-Waste Recycling", price: 30, description: "TVs, monitors and computers routed to a certified R2 electronics recycler, with hard drives physically destroyed on request." },
-    { id: "dismantle", name: "On-Site Dismantling", price: 120, description: "Sheds, playsets, hot tubs, workbenches and anything else that has to come apart before it fits through the door or onto the truck." },
-    { id: "demo", name: "Light Demolition", price: 250, description: "Small-scale interior demolition. Deck boards, non-structural walls, fencing, cabinetry and flooring, removed and hauled in the same visit." },
-    { id: "sweep", name: "Broom-Clean Finish", price: 60, description: "A full sweep, wipe-down and debris check of the cleared space, so a garage or unit is ready to hand off, list, or re-rent the same day." },
     { id: "donation", name: "Donation Drop-Off & Receipt", price: 0, description: "We route anything still usable to a local charity partner and send you the itemized donation receipt for your taxes. Always free." },
+    { id: "sweep", name: "Broom-Clean Finish", price: 60, description: "A full sweep, wipe-down and debris check of the cleared space, so a garage or unit is ready to hand off, list, or re-rent the same day." },
     { id: "priority", name: "Same-Day / Next-Day Priority", price: 75, description: "Jumps your pickup to the front of the route when you need it gone now. Subject to same-day crew availability." },
   ]
 }
@@ -306,6 +302,84 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
+          {/* Schedule Pickup */}
+          <Card className="rounded-lg border-line shadow-brand-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className={`${cardTitle} flex items-center gap-2.5`}>
+                <CalendarDays className="h-5 w-5 text-flame" />
+                {hasQuote ? "Pick Your Pickup Day" : "Pick a Walkthrough Day"}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {hasQuote
+                  ? "Choose a window and the crew confirms your exact arrival time the morning of."
+                  : "A crew lead comes out, sizes up the job, and gives you a written price."}
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-5">
+                {/* Date picker */}
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Choose a date</Label>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setCalendarWeekStart(Math.max(0, calendarWeekStart - 5))} disabled={!canGoBack}
+                      className="flex items-center justify-center w-10 h-10 shrink-0 rounded-md border-[1.5px] border-line text-ink hover:border-[#c4c1bc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <div className="flex-1 grid grid-cols-5 gap-2">
+                      {visibleDates.map((date) => {
+                        const isSelected = selectedDate && isSameDay(date, selectedDate)
+                        return (
+                          <button key={date.toISOString()} type="button" onClick={() => setSelectedDate(date)}
+                            className={`flex flex-col items-center py-3 px-1 rounded-lg border-2 text-center transition-all ${
+                              isSelected ? "border-brand bg-brand" : "border-line hover:border-[#c4c1bc]"
+                            }`}>
+                            <span className={`text-[11px] font-bold uppercase tracking-[0.08em] ${isSelected ? "text-[#c3d5f7]" : "text-muted-foreground"}`}>
+                              {date.toLocaleDateString("en-US", { weekday: "short" })}
+                            </span>
+                            <span className={`text-[22px] font-extrabold my-0.5 ${isSelected ? "text-white" : "text-ink"}`}>
+                              {date.getDate()}
+                            </span>
+                            <span className={`text-[11px] ${isSelected ? "text-[#c3d5f7]" : "text-muted-foreground"}`}>
+                              {date.toLocaleDateString("en-US", { month: "short" })}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <button type="button" onClick={() => setCalendarWeekStart(Math.min(availableDates.length - 5, calendarWeekStart + 5))} disabled={!canGoForward}
+                      className="flex items-center justify-center w-10 h-10 shrink-0 rounded-md border-[1.5px] border-line text-ink hover:border-[#c4c1bc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Time slots */}
+                {selectedDate && (
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">
+                      Arrival window for {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {TIME_SLOTS.map((slot) => {
+                        const isSelected = selectedTimeSlot === slot.id
+                        return (
+                          <button key={slot.id} type="button" onClick={() => setSelectedTimeSlot(slot.id)}
+                            className={`p-3.5 rounded-lg border-2 text-left transition-all ${
+                              isSelected ? "border-flame bg-brand-select" : "border-line hover:border-[#c4c1bc]"
+                            }`}>
+                            <p className={`text-sm font-semibold ${isSelected ? "text-flame" : "text-ink"}`}>{slot.label}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{slot.time}</p>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+
           {/* Add-Ons, only with a quote */}
           {hasQuote && (
             <Card className="rounded-lg border-line shadow-brand-sm">
@@ -350,7 +424,6 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
           )}
-
           {/* Personal Info + Pickup Address */}
           <Card className="rounded-lg border-line shadow-brand-sm">
             <CardHeader className="pb-3">
@@ -438,83 +511,6 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          {/* Schedule Pickup */}
-          <Card className="rounded-lg border-line shadow-brand-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className={`${cardTitle} flex items-center gap-2.5`}>
-                <CalendarDays className="h-5 w-5 text-flame" />
-                {hasQuote ? "Pick Your Pickup Day" : "Pick a Walkthrough Day"}
-              </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                {hasQuote
-                  ? "Choose a window and the crew confirms your exact arrival time the morning of."
-                  : "A crew lead comes out, sizes up the job, and gives you a written price."}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-5">
-                {/* Date picker */}
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Choose a date</Label>
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setCalendarWeekStart(Math.max(0, calendarWeekStart - 5))} disabled={!canGoBack}
-                      className="flex items-center justify-center w-10 h-10 shrink-0 rounded-md border-[1.5px] border-line text-ink hover:border-[#c4c1bc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <div className="flex-1 grid grid-cols-5 gap-2">
-                      {visibleDates.map((date) => {
-                        const isSelected = selectedDate && isSameDay(date, selectedDate)
-                        return (
-                          <button key={date.toISOString()} type="button" onClick={() => setSelectedDate(date)}
-                            className={`flex flex-col items-center py-3 px-1 rounded-lg border-2 text-center transition-all ${
-                              isSelected ? "border-brand bg-brand" : "border-line hover:border-[#c4c1bc]"
-                            }`}>
-                            <span className={`text-[11px] font-bold uppercase tracking-[0.08em] ${isSelected ? "text-[#c3d5f7]" : "text-muted-foreground"}`}>
-                              {date.toLocaleDateString("en-US", { weekday: "short" })}
-                            </span>
-                            <span className={`text-[22px] font-extrabold my-0.5 ${isSelected ? "text-white" : "text-ink"}`}>
-                              {date.getDate()}
-                            </span>
-                            <span className={`text-[11px] ${isSelected ? "text-[#c3d5f7]" : "text-muted-foreground"}`}>
-                              {date.toLocaleDateString("en-US", { month: "short" })}
-                            </span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                    <button type="button" onClick={() => setCalendarWeekStart(Math.min(availableDates.length - 5, calendarWeekStart + 5))} disabled={!canGoForward}
-                      className="flex items-center justify-center w-10 h-10 shrink-0 rounded-md border-[1.5px] border-line text-ink hover:border-[#c4c1bc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Time slots */}
-                {selectedDate && (
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">
-                      Arrival window for {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
-                    </Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {TIME_SLOTS.map((slot) => {
-                        const isSelected = selectedTimeSlot === slot.id
-                        return (
-                          <button key={slot.id} type="button" onClick={() => setSelectedTimeSlot(slot.id)}
-                            className={`p-3.5 rounded-lg border-2 text-left transition-all ${
-                              isSelected ? "border-flame bg-brand-select" : "border-line hover:border-[#c4c1bc]"
-                            }`}>
-                            <p className={`text-sm font-semibold ${isSelected ? "text-flame" : "text-ink"}`}>{slot.label}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{slot.time}</p>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Order Summary, only with a quote */}
           {hasQuote && (
             <Card className="rounded-lg border-line shadow-brand-sm">
@@ -572,7 +568,6 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
           )}
-
           {/* Confirm & Schedule */}
           <div className="pb-8">
             <button onClick={handleBookService} disabled={!canBook || isLoading} className="btn-flame w-full text-lg">
