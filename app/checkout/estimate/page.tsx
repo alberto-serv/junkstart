@@ -291,7 +291,7 @@ export default function EstimatePage() {
                     </div>
                   )}
                   <div className="border-t border-border pt-2 mt-2 flex justify-between gap-3 font-semibold text-foreground">
-                    <span>Total, all in</span>
+                    <span>Total</span>
                     <span className="whitespace-nowrap">{priceText(totalLow, totalHigh)}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground pt-1">

@@ -199,7 +199,6 @@ export default function ConfirmationPage() {
                       <span className="text-xl font-extrabold text-flame">
                         ${fmt(data.low)} &ndash; ${fmt(data.high)}
                       </span>
-                      <span className="text-sm text-body font-semibold">all in</span>
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -236,7 +235,7 @@ export default function ConfirmationPage() {
               {quoted ? (
                 <>
                   <div className="flex justify-between gap-3 font-bold">
-                    <span className="text-ink">Total, all in</span>
+                    <span className="text-ink">Total</span>
                     <span className="text-ink text-base whitespace-nowrap">{totalText}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-3">
