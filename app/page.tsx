@@ -4,6 +4,7 @@ import type React from "react"
 import { useRouter } from "next/navigation"
 import { Scale, Shield, Star } from "lucide-react"
 import { AvailabilityBanner } from "@/components/availability-banner"
+import { useNextOpening } from "@/hooks/use-next-opening"
 import { PHONE } from "@/lib/junk-data"
 
 /* ============================================================
@@ -22,6 +23,7 @@ import { PHONE } from "@/lib/junk-data"
 
 export default function HomePage() {
   const router = useRouter()
+  const slot = useNextOpening()
 
   const startBooking = () => router.push("/checkout")
 
@@ -42,8 +44,21 @@ export default function HomePage() {
               your items, so you pay a precise, verified price every time.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3">
-              <button type="button" onClick={startBooking} className="btn-flame text-base">
+              {/* The soonest slot rides on the button, not just the banner at the
+                  top of the page: by the time a customer has read the pitch the
+                  banner is off screen, and "when can you come" is the question
+                  standing between them and the click. */}
+              <button
+                type="button"
+                onClick={startBooking}
+                className="btn-flame flex-wrap justify-center text-base"
+              >
                 Book my pickup
+                {slot && (
+                  <span className="text-[13.5px] font-semibold opacity-75">
+                    &middot; next opening {slot.short}
+                  </span>
+                )}
               </button>
               <p className="text-[13px] text-muted-foreground">
                 Takes about two minutes. Nothing is charged today.
@@ -105,8 +120,13 @@ export default function HomePage() {
           Anchored for the whole page on a phone. The shared footer carries
           matching bottom padding on this route so the bar never covers it. */}
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-white/95 px-4 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-6px_24px_rgba(21,38,68,0.14)] backdrop-blur lg:hidden">
-        <button type="button" onClick={startBooking} className="btn-flame w-full text-base">
+        <button type="button" onClick={startBooking} className="btn-flame w-full flex-wrap justify-center text-base">
           Book my pickup
+          {slot && (
+            <span className="text-[13px] font-semibold opacity-75">
+              &middot; next opening {slot.short}
+            </span>
+          )}
         </button>
       </div>
 

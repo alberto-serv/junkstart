@@ -1,23 +1,18 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { CalendarClock } from "lucide-react"
-import { nextOpening } from "@/lib/schedule"
+import { useNextOpening } from "@/hooks/use-next-opening"
 
 /**
  * The availability line above the hero. Booking now opens on the calendar, so
  * the first thing the page says is when a truck can actually be here.
  *
- * The slot resolves in an effect, not during render. This route is statically
- * prerendered, so a date computed at render time would be baked at build time
- * and would tell a customer in August about an opening in July. Until it
- * resolves the banner shows the claim without the date, which is true on any
- * day and does not reflow when the real slot lands.
+ * The slot resolves after mount (see useNextOpening). Until it does, the banner
+ * shows the claim without the date, which is true on any day and does not
+ * reflow when the real slot lands.
  */
 export function AvailabilityBanner({ onBook }: { onBook: () => void }) {
-  const [slot, setSlot] = useState<{ day: string; window: string } | null>(null)
-
-  useEffect(() => setSlot(nextOpening()), [])
+  const slot = useNextOpening()
 
   return (
     <div className="border-b border-line-soft bg-ink text-white">

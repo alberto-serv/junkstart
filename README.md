@@ -59,7 +59,9 @@ The receipt still reads `mattressCount` and `tireCount` when present and default
 zero, so an old link still renders.
 
 `lib/schedule.ts` owns every date: `TIME_SLOTS`, `getAvailableDates()` (Mon–Sat, starting
-tomorrow), and `nextOpening()` for the banner. Nothing in it may be called during render.
+tomorrow), and `nextOpening()` for the banner and both **Book my pickup** buttons, which
+carry "· next opening Tomorrow, 8AM" beside the label. Components read it through
+`useNextOpening()`, never directly: nothing in `schedule.ts` may be called during render.
 These routes are statically prerendered, so a date computed at render time is baked at
 build time and would tell an August visitor about a July opening. The banner and the date
 strip both resolve in an effect and render a placeholder until they do.
