@@ -7,47 +7,61 @@ scale, at a rate the local franchise sets.
 
 ## The flow
 
-The homepage (`app/page.tsx`) asks **one question** and produces an honest price range
-before anyone is dispatched.
+Booking runs **calendar first, price second**. Availability is what a customer is shopping
+for and the thing most likely to lose them, so the flow reserves the window before it
+prices anything; pricing a job for someone who cannot get a truck this week is wasted work.
 
-1. **How big is the job?** Four size cards, Small through XL, each carrying a weight band
-   rolled up from the cheat sheet's translation table. Nobody knows what their junk weighs,
-   but everybody knows whether it is a carload or a garage.
-2. **A live result.** The result panel and the mobile price bar are on the page from the
-   first paint: before a size is picked they prompt and point back at the cards, so there
-   is always a CTA on screen. Picking a size swaps the prompt for the range, alongside the
-   scale promise: the estimate sets expectations, the scale sets the price.
+1. **Homepage** (`app/page.tsx`) — an availability banner at the very top, the pitch, and
+   the one question: *What size is your load?* Four size cards, Small through XL. The
+   result panel and the mobile price bar are on the page from the first paint, so there is
+   always a **Book my pickup** CTA on screen. Picking a size is optional: it shows the
+   range, and it rides along as a prefill.
+2. **`/checkout`** (step 1 of 2) — day and arrival window, then name, email, mobile,
+   pickup address and access notes. No prices anywhere on this page.
+3. **`/checkout/estimate`** (step 2 of 2) — the reserved window in a summary card, the four
+   size cards, the add-ons, and the running all-in total. **Book my pickup** commits.
+4. **`/checkout/confirmation`** — a printable receipt.
 
 | Size | Looks like | Weight band | Charlotte price |
 | --- | --- | --- | --- |
 | Small | Couch and recliner · mattress set · single closet cleanout | 50 to 400 lbs | $140 – $310 |
 | Medium | Bedroom of furniture · small garage cleanout · appliance haul | 500 to 1,000 lbs | $365 – $540 |
 | Large | Packed single-car garage · full living room · 10x10 storage unit | 1,000 to 1,400 lbs | $540 – $720 |
-| XL | Whole-house cleanout · estate or downsizing job · post-construction site | 1,500 lbs and up | no price, requests a visit |
+| XL | Whole-house cleanout · estate or downsizing job · post-construction site | 1,500 lbs and up | priced on site |
 
 Those examples ship on the cards themselves, as `Scenario.examples`. "Medium" means nothing
 on its own, and a customer left to interpret it rounds their own job down.
 
-Large stops short of `ON_SITE_THRESHOLD_LBS` on purpose, and XL sits past it: a whole
-property cannot be priced from a description, so that card requests a free visit instead
-of quoting. `/checkout?book=1` is that path end to end, from **Request a Visit** through
-the confirmation receipt.
+Large stops short of `ON_SITE_THRESHOLD_LBS` on purpose and XL sits past it, so XL never
+quotes. Under the old order that meant a separate "request a visit" flow; under this one it
+is just a booking whose price is settled on arrival, which is the same truck on the same
+day either way.
 
-The size cards are the whole estimator. The item tally and the mattress / tire /
-aggregates step are gone from the page: the crew catches per-item surcharges and heavy
-aggregate loads on site, where the certified scale settles the price anyway. `getQuote()`
-still takes a `QuoteFlags` argument and still applies the market's surcharges, and
-`ITEM_WEIGHTS` / `lbsFromItems()` are still exported, so any of that can come back without
-touching the pricing math. The homepage passes `NO_FLAGS`.
+The size cards are the whole estimator. The item tally and the mattress / tire / aggregates
+step are gone: the crew catches per-item surcharges and heavy aggregate loads on site,
+where the certified scale settles the price anyway. `getQuote()` still takes a `QuoteFlags`
+argument and still applies the market's surcharges, and `ITEM_WEIGHTS` / `lbsFromItems()`
+are still exported, so any of that can come back without touching the pricing math. Both
+callers pass `NO_FLAGS`.
 
-Anything at or above `ON_SITE_THRESHOLD_LBS` (1,500 lbs) stops quoting online and requests
-a free visit, which is the XL card by definition.
+### What each step hands the next
 
-From there: `/checkout` (add-ons, contact details, pickup address, date and arrival window)
-and `/checkout/confirmation` (a printable receipt). Both read the same params the homepage
-emits: `scenario`, `lowLbs`, `highLbs`, `low`, `high`, `minApplied`, `discountApplied`,
-`surcharges`. They still read `mattressCount` and `tireCount` when present, and default
-both to zero.
+State lives in the query string, so any step is linkable and refresh-safe.
+
+| Hop | Carries |
+| --- | --- |
+| Home → `/checkout` | `scenario`, and only if a size was picked |
+| `/checkout` → `/checkout/estimate` | `scenario`, `visitDate`, `visitTime`, `address`, `accessNotes`, `customerName`, `customerEmail`, `phone` |
+| `/checkout/estimate` → `/checkout/confirmation` | all of the above plus `scenarioLabel`, `lowLbs`, `highLbs`, `low`, `high`, `minApplied`, `discountApplied`, `surcharges`, `addOns`, `addOnsTotal`, `totalLow`, `totalHigh` |
+
+The receipt still reads `mattressCount` and `tireCount` when present and defaults both to
+zero, so an old link still renders.
+
+`lib/schedule.ts` owns every date: `TIME_SLOTS`, `getAvailableDates()` (Mon–Sat, starting
+tomorrow), and `nextOpening()` for the banner. Nothing in it may be called during render.
+These routes are statically prerendered, so a date computed at render time is baked at
+build time and would tell an August visitor about a July opening. The banner and the date
+strip both resolve in an effect and render a placeholder until they do.
 
 One marketing route ships alongside the estimator: `/lp/omaha/junk-removal`, a paid
 landing page with an embedded three-step scheduling module that books a pickup window
@@ -109,7 +123,7 @@ weights are national and only the prices are local:
 | "What the customer says → weight estimate" translation table | `SCENARIOS`, rolled up into three sizes | The one question on the homepage |
 | Item weight table | `ITEM_WEIGHTS` + `lbsFromItems()` | Nothing on the page today, kept for the tally |
 | Fill-in-the-blank market box | `MarketConfig` + `MARKET` | `getQuote()`, resolved by ZIP in production |
-| "How to build a quote" steps | `getQuote()` | Homepage, checkout, confirmation |
+| "How to build a quote" steps | `getQuote()` | Homepage, /checkout/estimate, confirmation |
 
 ## Legacy exports
 

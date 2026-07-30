@@ -1,88 +1,39 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   ArrowLeft, Check, MapPin, AlertCircle, Loader2, LocateFixed,
   ChevronLeft, ChevronRight, CalendarDays,
 } from "lucide-react"
-import { SCENARIOS, rangeStr } from "@/lib/junk-data"
+import {
+  TIME_SLOTS, getAvailableDates, isSameDay, formatVisitDate,
+} from "@/lib/schedule"
 
-// ─── Add-ons ─────────────────────────────────────────────────────────────────
-//
-// Junk removal add-ons are either a per-item disposal fee the landfill charges us
-// (mattresses, freon appliances, e-waste) or extra labor beyond loading
-// (dismantling, demolition, sweeping). Flat fees, independent of the load weight.
+/* ============================================================
+   Step 1 of 2 — the window, then who you are.
 
-interface AddOn { id: string; name: string; price: number; description: string }
-
-function buildAddOns(): AddOn[] {
-  return [
-    { id: "donation", name: "Donation Drop-Off & Receipt", price: 0, description: "We route anything still usable to a local charity partner and send you the itemized donation receipt for your taxes. Always free." },
-    { id: "hauling", name: "Full-Service Hauling", price: 45, description: "The crew carries everything out from wherever it sits, upstairs, basement, attic or back yard, instead of you staging it at the curb first." },
-    { id: "sweep", name: "Broom-Clean Finish", price: 60, description: "A full sweep, wipe-down and debris check of the cleared space, so a garage or unit is ready to hand off, list, or re-rent the same day." },
-    { id: "priority", name: "Same-Day / Next-Day Priority", price: 75, description: "Jumps your pickup to the front of the route when you need it gone now. Subject to same-day crew availability." },
-  ]
-}
-
-/**
- * Resolve the ?scenario= param back to the size the customer picked. The cards
- * read "Small" / "Medium" / "Large", which needs a noun once it is standing on
- * its own next to a price.
- */
-function scenarioLabelFor(id: string | null): string {
-  if (!id) return "Your pickup"
-  if (id === "custom") return "Your item tally"
-  const size = SCENARIOS.find((s) => s.id === id)
-  return size ? `${size.label} pickup` : "Your pickup"
-}
-
-// ─── Scheduling helpers ─────────────────────────────────────────────────────
-
-const TIME_SLOTS = [
-  { id: "morning", label: "Morning", time: "8:00 – 11:00 AM" },
-  { id: "mid-day", label: "Mid-Day", time: "11:00 AM – 2:00 PM" },
-  { id: "afternoon", label: "Afternoon", time: "2:00 – 5:00 PM" },
-  { id: "evening", label: "Late Afternoon", time: "5:00 – 7:00 PM" },
-]
-
-function getAvailableDates(): Date[] {
-  const dates: Date[] = []
-  const cursor = new Date()
-  cursor.setDate(cursor.getDate() + 1) // start tomorrow
-  while (dates.length < 18) {
-    // Junk crews run Saturdays; only Sunday is off.
-    if (cursor.getDay() !== 0) dates.push(new Date(cursor))
-    cursor.setDate(cursor.getDate() + 1)
-  }
-  return dates
-}
-
-function isSameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
-}
-
-// ─── Component ───────────────────────────────────────────────────────────────
+   The flow used to price the load first and schedule last. It asks for the
+   window first now, because availability is the thing a customer is actually
+   shopping for and the thing most likely to lose them: no point pricing a job
+   for someone who cannot get a truck this week. Nothing on this page knows what
+   the load is or what it costs. That is /checkout/estimate, which this page
+   hands off to with everything collected here in the query string.
+   ============================================================ */
 
 export default function CheckoutPage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
+
+  // Carried through untouched. The homepage sets it when a size was picked
+  // there; the estimate step treats it as a prefill, not a commitment.
   const [scenario, setScenario] = useState("")
-  const [scenarioLabel, setScenarioLabel] = useState("Your pickup")
-  const [lowLbs, setLowLbs] = useState(0)
-  const [highLbs, setHighLbs] = useState(0)
-  const [mattressCount, setMattressCount] = useState(0)
-  const [tireCount, setTireCount] = useState(0)
-  const [low, setLow] = useState(0)
-  const [high, setHigh] = useState(0)
-  const [minApplied, setMinApplied] = useState(false)
-  const [discountApplied, setDiscountApplied] = useState(false)
-  const [surcharges, setSurcharges] = useState(0)
+
   const [serviceAddress, setServiceAddress] = useState("")
   const [addressInput, setAddressInput] = useState("")
   const [addressLine2, setAddressLine2] = useState("")
@@ -91,7 +42,6 @@ export default function CheckoutPage() {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isGeolocating, setIsGeolocating] = useState(false)
   const [addressNotRecognized, setAddressNotRecognized] = useState(false)
-  const [selectedAddOns, setSelectedAddOns] = useState<AddOn[]>([])
   const [accessNotes, setAccessNotes] = useState("")
   const [customerInfo, setCustomerInfo] = useState({ firstName: "", lastName: "", email: "" })
   const [phoneNumber, setPhoneNumber] = useState("")
@@ -100,9 +50,12 @@ export default function CheckoutPage() {
   const [calendarWeekStart, setCalendarWeekStart] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const suggestionRef = useRef<HTMLDivElement>(null)
-  const hasInit = useRef(false)
 
-  const availableDates = useMemo(() => getAvailableDates(), [])
+  // Dates come off the real clock, so they resolve after mount rather than at
+  // render: this route is prerendered and would otherwise ship a build-time
+  // calendar. Empty until then, which the date strip renders as skeletons.
+  const [availableDates, setAvailableDates] = useState<Date[]>([])
+  useEffect(() => setAvailableDates(getAvailableDates()), [])
 
   const mockAddresses = useMemo(() => [
     "1420 Sardis Rd N, Charlotte, NC 28270",
@@ -112,34 +65,11 @@ export default function CheckoutPage() {
     "6401 Morrison Blvd, Charlotte, NC 28211",
   ], [])
 
-  const availableAddOns = useMemo(() => buildAddOns(), [])
-
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
   useEffect(() => {
-    if (hasInit.current) return
-    hasInit.current = true
-    const num = (key: string) => {
-      const raw = searchParams.get(key)
-      if (!raw) return null
-      const n = parseInt(raw, 10)
-      return Number.isNaN(n) ? null : n
-    }
-
-    // book=1 is the on-site path: no weights, no price, so every field below
-    // stays at zero and the page renders its request-a-visit variant.
     const sc = searchParams.get("scenario")
-    if (sc) { setScenario(sc); setScenarioLabel(scenarioLabelFor(sc)) }
-
-    const lbsLow = num("lowLbs"); if (lbsLow !== null) setLowLbs(lbsLow)
-    const lbsHigh = num("highLbs"); if (lbsHigh !== null) setHighLbs(lbsHigh)
-    const mc = num("mattressCount"); if (mc !== null) setMattressCount(mc)
-    const tc = num("tireCount"); if (tc !== null) setTireCount(tc)
-    const lo = num("low"); if (lo !== null) setLow(lo)
-    const hi = num("high"); if (hi !== null) setHigh(hi)
-    const sur = num("surcharges"); if (sur !== null) setSurcharges(sur)
-    setMinApplied(searchParams.get("minApplied") === "1")
-    setDiscountApplied(searchParams.get("discountApplied") === "1")
+    if (sc) setScenario(sc)
   }, [searchParams])
 
   // Address suggestions
@@ -187,60 +117,28 @@ export default function CheckoutPage() {
     setShowSuggestions(false); setAddressSuggestions([]); setAddressInput(s); handleAddressLookup(s)
   }, [handleAddressLookup])
 
-  const handleAddOnToggle = useCallback((addOn: AddOn) => {
-    setSelectedAddOns(prev => prev.find(a => a.id === addOn.id) ? prev.filter(a => a.id !== addOn.id) : [...prev, addOn])
-  }, [])
+  const canContinue = Boolean(
+    customerInfo.firstName && customerInfo.lastName && customerInfo.email
+    && phoneNumber.trim() && serviceAddress && selectedDate && selectedTimeSlot,
+  )
 
-  // When the customer skips the estimator, no price comes through and we render
-  // the request-a-visit flow instead of the priced pickup.
-  const hasQuote = high > 0
-
-  // Add-on fees land on top of the weighed haul price.
-  const addOnsTotal = useMemo(() => selectedAddOns.reduce((s, a) => s + a.price, 0), [selectedAddOns])
-
-  const totalLow = low + addOnsTotal
-  const totalHigh = high + addOnsTotal
-
-  const priceText = (a: number, b: number) => `$${rangeStr(a, b)}`
-  const weightText = `~${lowLbs.toLocaleString()} to ${highLbs.toLocaleString()} lbs estimated`
-
-  const canBook = customerInfo.firstName && customerInfo.lastName && customerInfo.email
-    && phoneNumber.trim() && serviceAddress && selectedDate && selectedTimeSlot
-
-  const formatVisitDate = (date: Date) =>
-    date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
-
-  const handleBookService = useCallback(async () => {
+  const handleContinue = useCallback(async () => {
+    if (!canContinue) return
     setIsLoading(true)
-    await new Promise(r => setTimeout(r, 1500))
+    await new Promise(r => setTimeout(r, 600))
     const visitSlot = TIME_SLOTS.find(s => s.id === selectedTimeSlot)
     const params = new URLSearchParams({
       scenario,
-      scenarioLabel,
-      lowLbs: lowLbs.toString(),
-      highLbs: highLbs.toString(),
-      mattressCount: mattressCount.toString(),
-      tireCount: tireCount.toString(),
-      low: low.toString(),
-      high: high.toString(),
-      minApplied: minApplied ? "1" : "0",
-      discountApplied: discountApplied ? "1" : "0",
-      surcharges: surcharges.toString(),
       address: [serviceAddress, addressLine2.trim()].filter(Boolean).join(", "),
       accessNotes,
-      addOns: selectedAddOns.map(a => `${a.name}:${a.price}`).join(","),
-      addOnsTotal: addOnsTotal.toString(),
-      totalLow: totalLow.toString(),
-      totalHigh: totalHigh.toString(),
       customerName: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
       customerEmail: customerInfo.email,
       phone: phoneNumber,
       visitDate: selectedDate ? formatVisitDate(selectedDate) : "",
       visitTime: visitSlot ? visitSlot.time : "",
     })
-    window.location.href = `/checkout/confirmation?${params.toString()}`
-    setIsLoading(false)
-  }, [scenario, scenarioLabel, lowLbs, highLbs, mattressCount, tireCount, low, high, minApplied, discountApplied, surcharges, serviceAddress, addressLine2, accessNotes, selectedAddOns, addOnsTotal, totalLow, totalHigh, customerInfo, phoneNumber, selectedDate, selectedTimeSlot])
+    router.push(`/checkout/estimate?${params.toString()}`)
+  }, [canContinue, scenario, serviceAddress, addressLine2, accessNotes, customerInfo, phoneNumber, selectedDate, selectedTimeSlot, router])
 
   // Calendar pagination: show 5 days at a time
   const visibleDates = availableDates.slice(calendarWeekStart, calendarWeekStart + 5)
@@ -255,70 +153,28 @@ export default function CheckoutPage() {
         <div className="mb-8">
           <Link href="/" className="inline-flex items-center text-flame hover:text-flame-deep mb-5 text-sm font-bold transition-colors">
             <ArrowLeft className="h-4 w-4 mr-1.5" />
-            Back to your estimate
+            Back to sizes
           </Link>
-          <h1 className="disp text-ink text-[clamp(30px,5vw,52px)] text-center">
-            {hasQuote ? "Schedule Your Pickup" : "Request a Free Visit"}
+          <p className="eyebrow text-center">Step 1 of 2</p>
+          <h1 className="disp text-ink text-[clamp(30px,5vw,52px)] text-center mt-2">
+            Pick Your Pickup Window
           </h1>
+          <p className="text-center text-body mt-3 max-w-[52ch] mx-auto">
+            Reserve the day and window first. You size the load and see your price on the next
+            step, and nothing is charged today.
+          </p>
         </div>
 
         <div className="max-w-2xl mx-auto space-y-5">
-          {/* Pickup Summary */}
-          <Card className="rounded-lg border-line shadow-brand-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className={cardTitle}>{hasQuote ? "Your Pickup" : "Your Free Visit"}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {hasQuote ? (
-                <div className="bg-brand-band border border-line p-6 rounded-lg">
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-1">
-                    <h3 className="text-[19px] font-semibold text-ink">{scenarioLabel}</h3>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-extrabold text-flame">{priceText(low, high)}</span>
-                      <span className="text-body text-[13px] font-semibold">all in</span>
-                    </div>
-                  </div>
-                  <p className="text-[13.5px] text-body">{weightText}</p>
-                  {surcharges > 0 && (
-                    <p className="text-[13.5px] text-body mt-0.5">
-                      Includes ${surcharges.toLocaleString()} in disposal surcharges
-                      {mattressCount > 0 && ` · ${mattressCount} mattress${mattressCount === 1 ? "" : "es"}`}
-                      {tireCount > 0 && ` · ${tireCount} tire${tireCount === 1 ? "" : "s"}`}
-                    </p>
-                  )}
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                    {minApplied && (
-                      <span className="text-[12px] font-semibold text-flame">Includes our minimum pickup</span>
-                    )}
-                    {discountApplied && (
-                      <span className="rounded-full bg-green-100 px-2.5 py-1 text-[11.5px] font-bold text-green-800">
-                        Volume rate applied
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-brand-band border border-line p-6 rounded-lg">
-                  <p className="text-sm text-ink">
-                    No estimate needed. Pick a time below and a crew lead will come out, look at
-                    the pile, and hand you a written all-in price. Free, with no obligation.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Schedule Pickup */}
+          {/* Schedule */}
           <Card className="rounded-lg border-line shadow-brand-sm">
             <CardHeader className="pb-3">
               <CardTitle className={`${cardTitle} flex items-center gap-2.5`}>
                 <CalendarDays className="h-5 w-5 text-flame" />
-                {hasQuote ? "Pick Your Pickup Day" : "Pick a Day for the Visit"}
+                Pick Your Pickup Day
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                {hasQuote
-                  ? "Choose a window and the crew confirms your exact arrival time the morning of."
-                  : "A crew lead comes out, sizes up the job, and gives you a written price."}
+                Choose a window and the crew confirms your exact arrival time the morning of.
               </p>
             </CardHeader>
             <CardContent>
@@ -332,7 +188,13 @@ export default function CheckoutPage() {
                       <ChevronLeft className="h-4 w-4" />
                     </button>
                     <div className="flex-1 grid grid-cols-5 gap-2">
-                      {visibleDates.map((date) => {
+                      {visibleDates.length === 0
+                        // Pre-mount placeholder. Same box, same grid, so the real
+                        // dates drop in without the card changing height.
+                        ? Array.from({ length: 5 }).map((_, i) => (
+                            <div key={i} className="h-[86px] rounded-lg border-2 border-line-soft bg-muted/40" />
+                          ))
+                        : visibleDates.map((date) => {
                         const isSelected = selectedDate && isSameDay(date, selectedDate)
                         return (
                           <button key={date.toISOString()} type="button" onClick={() => setSelectedDate(date)}
@@ -385,51 +247,6 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-
-          {/* Add-Ons, only with a quote */}
-          {hasQuote && (
-            <Card className="rounded-lg border-line shadow-brand-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className={cardTitle}>Add-On Services (Optional)</CardTitle>
-                <p className="text-[13px] text-muted-foreground mt-2">
-                  These sit on top of your weighed haul price. Anything the facility charges us
-                  is passed through at cost.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {availableAddOns.map((addOn) => {
-                    const checked = selectedAddOns.some(a => a.id === addOn.id)
-                    return (
-                      <div
-                        key={addOn.id}
-                        className={`p-[18px] border-2 rounded-lg transition-all duration-150 ${
-                          checked ? "border-flame bg-brand-select" : "border-line hover:border-[#c4c1bc]"
-                        }`}
-                      >
-                        <div className="flex items-start">
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => handleAddOnToggle(addOn)}
-                            className="mt-1 data-[state=checked]:bg-flame data-[state=checked]:border-flame data-[state=checked]:text-white"
-                          />
-                          <div className="ml-3 flex-1">
-                            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                              <h4 className="font-semibold text-ink text-[15.5px]">{addOn.name}</h4>
-                              <span className="text-sm font-bold text-flame shrink-0">
-                                {addOn.price === 0 ? "Free" : `+$${addOn.price}`}
-                              </span>
-                            </div>
-                            <p className="text-[13px] text-muted-foreground mt-1">{addOn.description}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
           {/* Personal Info + Pickup Address */}
           <Card className="rounded-lg border-line shadow-brand-sm">
             <CardHeader className="pb-3">
@@ -517,71 +334,14 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          {/* Order Summary, only with a quote */}
-          {hasQuote && (
-            <Card className="rounded-lg border-line shadow-brand-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className={cardTitle}>Price Summary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">{scenarioLabel}</span>
-                    <span className="font-medium text-right whitespace-nowrap">{priceText(low, high)}</span>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">{weightText}</span>
-                  </div>
-                  {surcharges > 0 && (
-                    <div className="flex justify-between gap-3">
-                      <span className="text-muted-foreground">
-                        Disposal surcharges
-                        {mattressCount > 0 && ` · ${mattressCount} mattress${mattressCount === 1 ? "" : "es"}`}
-                        {tireCount > 0 && ` · ${tireCount} tire${tireCount === 1 ? "" : "s"}`}
-                      </span>
-                      <span className="font-medium text-right whitespace-nowrap">
-                        included
-                      </span>
-                    </div>
-                  )}
-                  {selectedAddOns.length > 0 && (
-                    <div className="border-t border-border pt-2 mt-2">
-                      <p className="text-muted-foreground mb-1.5">Add-ons</p>
-                      <ul className="space-y-1">
-                        {selectedAddOns.map(a => (
-                          <li key={a.id} className="flex justify-between gap-3">
-                            <span className="text-foreground flex items-start gap-1.5">
-                              <Check className="h-3.5 w-3.5 text-flame mt-0.5 shrink-0" />
-                              <span>{a.name}</span>
-                            </span>
-                            <span className="font-medium whitespace-nowrap">
-                              {a.price === 0 ? "Free" : `+$${a.price}`}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  <div className="border-t border-border pt-2 mt-2 flex justify-between gap-3 font-semibold text-foreground">
-                    <span>Total, all in</span>
-                    <span className="whitespace-nowrap">{priceText(totalLow, totalHigh)}</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground pt-1">
-                    Nothing is charged today. Final price is weighed on our certified scale before
-                    work starts.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          {/* Confirm & Schedule */}
+          {/* Continue to the estimate */}
           <div className="pb-8">
-            <button onClick={handleBookService} disabled={!canBook || isLoading} className="btn-flame w-full text-lg">
-              {isLoading ? "Booking..." : hasQuote ? "Confirm & Book Pickup" : "Request This Visit"}
+            <button onClick={handleContinue} disabled={!canContinue || isLoading} className="btn-flame w-full text-lg">
+              {isLoading ? "One moment..." : "Continue to my estimate"}
             </button>
-            {!canBook && (
+            {!canContinue && (
               <p className="text-xs text-muted-foreground text-center mt-3">
-                Please fill in your details, confirm your pickup address, and choose a date &amp; time
+                Please choose a date &amp; time, fill in your details, and confirm your pickup address
               </p>
             )}
           </div>

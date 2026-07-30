@@ -4,9 +4,11 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Scale, Shield, Star } from "lucide-react"
+import { AvailabilityBanner } from "@/components/availability-banner"
+import { ScenarioCard } from "@/components/scenario-card"
 import {
   SCENARIOS, getQuote, NO_FLAGS, PHONE, rangeStr,
-  type Scenario, type ScenarioId,
+  type ScenarioId,
 } from "@/lib/junk-data"
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -36,23 +38,19 @@ export default function HomePage() {
   const scrollToSizes = () =>
     document.getElementById("pick-a-size")?.scrollIntoView({ behavior: "smooth", block: "start" })
 
-  const handleCheckout = () => {
-    if (!quote || !bounds) return
-    const params = new URLSearchParams({
-      scenario: scenario ?? "custom",
-      lowLbs: bounds.lowLbs.toString(),
-      highLbs: bounds.highLbs.toString(),
-      low: quote.low.toString(),
-      high: quote.high.toString(),
-      minApplied: quote.minApplied ? "1" : "0",
-      discountApplied: quote.discountApplied ? "1" : "0",
-      surcharges: quote.surcharges.toString(),
-    })
-    router.push(`/checkout?${params.toString()}`)
-  }
+  /**
+   * Every CTA on the page lands here. Booking opens on the calendar now, so the
+   * only thing the homepage hands forward is the size the customer picked, and
+   * only as a prefill: /checkout/estimate lets them change it, and starting
+   * with nothing selected is a valid way through.
+   */
+  const startBooking = () =>
+    router.push(scenario ? `/checkout?scenario=${scenario}` : "/checkout")
 
   return (
     <div className="min-h-screen bg-background">
+
+      <AvailabilityBanner onBook={startBooking} />
 
       {/* ── Hero ───────────────────────────────────────────────────────── */}
       <section className="bg-brand-band-soft border-b border-line-soft">
@@ -67,10 +65,10 @@ export default function HomePage() {
             </p>
             <button
               type="button"
-              onClick={() => router.push("/checkout?book=1")}
+              onClick={startBooking}
               className="mt-[22px] inline-flex items-center gap-2 text-base font-bold text-flame hover:text-flame-deep transition-colors"
             >
-              Rather have us take a look first? Request a free visit
+              Not sure of the size? Book the window and we size it on site
             </button>
           </div>
         </div>
@@ -81,7 +79,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-12 md:py-14">
           <div className="max-w-4xl mx-auto">
             <StepHeader
-              title="How big is the job?"
+              title="What size is your load?"
               subtitle="Pick the closest fit. Nobody measures junk, everybody recognizes it."
             />
 
@@ -114,7 +112,7 @@ export default function HomePage() {
                   <p className="mt-3 max-w-[58ch] text-body">
                     Small, medium or large covers most jobs. Choose the closest one and you get an
                     all-in range, trip fee, labor and disposal included, before anyone is
-                    dispatched. XL jobs skip the guessing and get a free visit instead.
+                    dispatched. XL is priced on site, by the same scale.
                   </p>
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
                     <button type="button" onClick={scrollToSizes} className="btn-flame shrink-0">
@@ -122,27 +120,27 @@ export default function HomePage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => router.push("/checkout?book=1")}
+                      onClick={startBooking}
                       className="text-sm font-bold text-flame transition-colors hover:text-flame-deep sm:ml-2"
                     >
-                      Or request a free visit
+                      Or book a window and size it later
                     </button>
                   </div>
                 </div>
               ) : onSite ? (
                 <div className="rounded-lg border border-line bg-brand-band p-8 shadow-brand-sm md:px-9">
-                  <p className="eyebrow mb-2.5">Free visit</p>
+                  <p className="eyebrow mb-2.5">Priced on site</p>
                   <h3 className="disp text-ink text-[clamp(22px,3vw,30px)]">
                     A job this size deserves a real walkthrough
                   </h3>
                   <p className="mt-3 max-w-[58ch] text-body">
-                    Loads at this scale vary too much to price from a description. Request a visit
-                    and a crew lead walks it with you, weighs the plan against what is actually
-                    there, and hands you a firm number before any work starts. Free, with no
-                    obligation.
+                    Loads at this scale vary too much to price from a description. Book your window
+                    and a crew lead walks it with you first, weighs the plan against what is
+                    actually there, and hands you a firm number before any work starts. No
+                    obligation, and nothing is charged today.
                   </p>
-                  <button onClick={() => router.push("/checkout?book=1")} className="btn-flame mt-6">
-                    Request a Visit
+                  <button onClick={startBooking} className="btn-flame mt-6">
+                    Book my pickup
                   </button>
                 </div>
               ) : quote && bounds ? (
@@ -174,8 +172,8 @@ export default function HomePage() {
                         )}
                       </div>
                     </div>
-                    <button onClick={handleCheckout} className="btn-flame shrink-0">
-                      Book This Pickup
+                    <button onClick={startBooking} className="btn-flame shrink-0">
+                      Book my pickup
                     </button>
                   </div>
 
@@ -225,14 +223,10 @@ export default function HomePage() {
             <>
               <p className="mb-2 text-[13px] text-muted-foreground">
                 {activeLabel}
-                <span className="font-semibold text-ink"> &middot; priced on site, free</span>
+                <span className="font-semibold text-ink"> &middot; priced on site</span>
               </p>
-              <button
-                type="button"
-                onClick={() => router.push("/checkout?book=1")}
-                className="btn-flame w-full text-base"
-              >
-                Request a Visit
+              <button type="button" onClick={startBooking} className="btn-flame w-full text-base">
+                Book my pickup
               </button>
             </>
           ) : quote && bounds ? (
@@ -246,12 +240,8 @@ export default function HomePage() {
                   ${rangeStr(quote.low, quote.high)}
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={handleCheckout}
-                className="btn-flame w-full text-base"
-              >
-                Book This Pickup
+              <button type="button" onClick={startBooking} className="btn-flame w-full text-base">
+                Book my pickup
               </button>
             </>
           ) : null}
@@ -273,65 +263,6 @@ export default function HomePage() {
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
-
-/**
- * Two layouts from one card. On desktop the four sit side by side: size on top,
- * examples as the body, weight band alone in a footer under a hairline, all four
- * footers on one line because the card is h-full and the list is flex-1.
- *
- * On a phone they stack full width instead of squeezing into two columns, which
- * is what made the row ragged: at half a phone's width every second example
- * wrapped, so no two cards were the same height and the bands landed wherever.
- * Full width fits every example on one line, and the band moves up beside the
- * size, where it reads as that size's price of entry rather than a footnote.
- */
-function ScenarioCard({ scenario, selected, onClick }: { scenario: Scenario; selected: boolean; onClick: () => void }) {
-  const hint = scenario.onSiteOnly
-    ? "We come look, free"
-    : `~${scenario.lowLbs.toLocaleString()} to ${scenario.highLbs.toLocaleString()} lbs`
-  const hintTone = selected ? "text-flame" : "text-muted-foreground"
-  return (
-    <button
-      onClick={onClick}
-      aria-pressed={selected}
-      className={`group relative flex h-full flex-col overflow-hidden rounded-xl border-2 p-4 text-left transition-all duration-150 md:p-5 md:hover:-translate-y-0.5 ${
-        selected
-          ? "border-flame bg-brand-select shadow-[0_10px_26px_rgba(241,93,42,0.18)]"
-          : "border-line bg-white hover:border-[#c4c1bc] hover:shadow-brand-sm"
-      }`}
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <span className={`disp text-[19px] leading-none ${selected ? "text-flame" : "text-ink"}`}>
-          {scenario.label}
-        </span>
-        {/* Mobile only. Desktop keeps it in the footer so the four line up. */}
-        <span className={`text-[12px] font-bold md:hidden ${hintTone}`}>{hint}</span>
-      </div>
-
-      {/* The examples are the card's real content: they are what a customer
-          matches their own pile against, so they get the line height. */}
-      <ul className="mt-3 flex flex-1 flex-col gap-1.5 text-[13px] leading-snug text-body md:mt-3.5">
-        {scenario.examples.map((ex) => (
-          <li key={ex} className="flex items-start gap-2">
-            <span
-              aria-hidden="true"
-              className={`mt-[6px] h-1 w-1 shrink-0 rounded-full ${selected ? "bg-flame" : "bg-brand"}`}
-            />
-            <span>{ex}</span>
-          </li>
-        ))}
-      </ul>
-
-      <div
-        className={`mt-4 hidden border-t pt-3 text-[12px] font-bold md:block ${
-          selected ? "border-flame/25 text-flame" : "border-line-soft text-muted-foreground"
-        }`}
-      >
-        {hint}
-      </div>
-    </button>
-  )
-}
 
 /** The numeral is optional: with the flags step gone there is only one question
  *  on the page, and a lone "1" badge implies a step 2 that no longer exists. */

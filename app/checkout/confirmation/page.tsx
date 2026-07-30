@@ -63,8 +63,8 @@ export default function ConfirmationPage() {
   const surcharges = parseFloat(data.surcharges) || 0
   const weightText = `~${fmt(data.lowLbs)} to ${fmt(data.highLbs)} lbs`
 
-  // A request-a-visit booking arrives with no price, so the
-  // receipt drops the quote and pickup-detail sections.
+  // An XL booking arrives with no price, so the receipt drops the quote and
+  // pickup-detail sections and says the crew prices it on site instead.
   const quoted = parseFloat(data.high) > 0
   const receiptDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
 
@@ -80,7 +80,7 @@ export default function ConfirmationPage() {
         <div className="text-center mb-10 print:hidden">
           <h1 className="disp text-ink text-[clamp(30px,5vw,52px)] mb-2">You&apos;re on the Schedule</h1>
           <p className="text-muted-foreground text-base">
-            {quoted ? "Your price and pickup window are confirmed below" : "Your free visit is confirmed below"}
+            {quoted ? "Your price and pickup window are confirmed below" : "Your pickup window is confirmed below, and the crew prices it on site"}
           </p>
         </div>
 
@@ -112,7 +112,7 @@ export default function ConfirmationPage() {
             {data.visitDate && (
               <div className="border-t border-line-soft pt-5">
                 <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
-                  {quoted ? "Your Pickup" : "Your Visit"}
+                  Your Pickup
                 </h3>
                 <div className="bg-[#F2F0EC] border border-line-soft rounded-lg p-4">
                   <div className="space-y-2.5">
@@ -136,7 +136,7 @@ export default function ConfirmationPage() {
                   <p className="text-xs text-muted-foreground mt-3">
                     {quoted
                       ? "The crew texts you when they're 30 minutes out and confirms the final price on site before anything goes on the truck."
-                      : "A crew lead will walk the job with you and hand you a written all-in price."}
+                      : "A crew lead walks the job with you when they arrive and hands you a written all-in price before anything goes on the truck."}
                   </p>
                 </div>
               </div>
@@ -246,8 +246,8 @@ export default function ConfirmationPage() {
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  A crew lead will size up the job during the visit and hand you a written
-                  all-in price, no obligation.
+                  A load this size is priced on site. The crew lead sizes it up when they arrive
+                  and hands you a written all-in price, no obligation.
                 </p>
               )}
             </div>

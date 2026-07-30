@@ -21,7 +21,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     <div className="relative flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">{children}</main>
-      <Footer bottomBarSpace={pathname === "/"} />
+      {/* Both routes carry a fixed mobile price bar; the footer pads under it. */}
+      <Footer bottomBarSpace={pathname === "/" || pathname === "/checkout/estimate"} />
     </div>
   )
 }
