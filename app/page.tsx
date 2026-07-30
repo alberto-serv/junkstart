@@ -297,7 +297,21 @@ function ScenarioCard({ scenario, selected, onClick }: { scenario: Scenario; sel
         {scenario.label}
       </span>
       <span className="text-[12px] leading-snug text-muted-foreground">{scenario.detail}</span>
-      <span className={`mt-0.5 text-[11.5px] font-bold ${selected ? "text-flame" : "text-muted-foreground"}`}>
+
+      {/* The examples are the card's real content: they are what a customer
+          matches their own pile against, so they get the line height. */}
+      <ul className="mt-0.5 flex flex-col gap-1 text-[12px] leading-snug text-body">
+        {scenario.examples.map((ex) => (
+          <li key={ex} className="flex gap-1.5">
+            <span className={selected ? "text-flame" : "text-brand"} aria-hidden="true">
+              &middot;
+            </span>
+            <span>{ex}</span>
+          </li>
+        ))}
+      </ul>
+
+      <span className={`mt-auto pt-1.5 text-[11.5px] font-bold ${selected ? "text-flame" : "text-muted-foreground"}`}>
         {hint}
       </span>
     </button>

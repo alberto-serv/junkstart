@@ -104,6 +104,12 @@ export interface Scenario {
   /** Customer language, not ours. */
   label: string
   detail: string
+  /**
+   * Three concrete jobs that land in this band. "Medium" means nothing on its
+   * own; "bedroom of furniture" is the line a customer matches themselves
+   * against, and it is what keeps them from rounding their own job down.
+   */
+  examples: string[]
   icon: LucideIcon
   lowLbs: number
   highLbs: number
@@ -112,10 +118,43 @@ export interface Scenario {
 }
 
 export const SCENARIOS: Scenario[] = [
-  { id: "small", label: "Small", detail: "A few items, up to a pickup bed's worth", icon: PackageIcon, lowLbs: 50, highLbs: 400 },
-  { id: "medium", label: "Medium", detail: "A furnished room, or half a garage", icon: Sofa, lowLbs: 500, highLbs: 1000 },
-  { id: "large", label: "Large", detail: "A packed garage, or a storage unit", icon: Warehouse, lowLbs: 1000, highLbs: 1400 },
-  { id: "xl", label: "XL", detail: "A whole house, estate or hoarding cleanout", icon: Home, lowLbs: 1500, highLbs: 0, onSiteOnly: true },
+  {
+    id: "small",
+    label: "Small",
+    detail: "A few items, up to a pickup bed's worth",
+    examples: ["Couch and recliner", "Mattress set", "Single closet cleanout"],
+    icon: PackageIcon,
+    lowLbs: 50,
+    highLbs: 400,
+  },
+  {
+    id: "medium",
+    label: "Medium",
+    detail: "A furnished room, or half a garage",
+    examples: ["Bedroom of furniture", "Small garage cleanout", "Appliance haul"],
+    icon: Sofa,
+    lowLbs: 500,
+    highLbs: 1000,
+  },
+  {
+    id: "large",
+    label: "Large",
+    detail: "A packed garage, or a storage unit",
+    examples: ["Packed single-car garage", "Full living room", "10x10 storage unit"],
+    icon: Warehouse,
+    lowLbs: 1000,
+    highLbs: 1400,
+  },
+  {
+    id: "xl",
+    label: "XL",
+    detail: "More than a truck's worth",
+    examples: ["Whole-house cleanout", "Estate or hoarding job", "Post-construction site"],
+    icon: Home,
+    lowLbs: 1500,
+    highLbs: 0,
+    onSiteOnly: true,
+  },
 ]
 
 // ─── 4. Flags ────────────────────────────────────────────────────────────────

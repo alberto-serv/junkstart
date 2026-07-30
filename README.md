@@ -18,12 +18,15 @@ before anyone is dispatched.
    is always a CTA on screen. Picking a size swaps the prompt for the range, alongside the
    scale promise: the estimate sets expectations, the scale sets the price.
 
-| Size | Weight band | Charlotte price |
-| --- | --- | --- |
-| Small | 50 to 400 lbs | $140 – $310 |
-| Medium | 500 to 1,000 lbs | $365 – $540 |
-| Large | 1,000 to 1,400 lbs | $540 – $720 |
-| XL | 1,500 lbs and up | no price, requests a visit |
+| Size | Looks like | Weight band | Charlotte price |
+| --- | --- | --- | --- |
+| Small | Couch and recliner · mattress set · single closet cleanout | 50 to 400 lbs | $140 – $310 |
+| Medium | Bedroom of furniture · small garage cleanout · appliance haul | 500 to 1,000 lbs | $365 – $540 |
+| Large | Packed single-car garage · full living room · 10x10 storage unit | 1,000 to 1,400 lbs | $540 – $720 |
+| XL | Whole-house cleanout · estate or hoarding job · post-construction site | 1,500 lbs and up | no price, requests a visit |
+
+Those examples ship on the cards themselves, as `Scenario.examples`. "Medium" means nothing
+on its own, and a customer left to interpret it rounds their own job down.
 
 Large stops short of `ON_SITE_THRESHOLD_LBS` on purpose, and XL sits past it: a whole
 property cannot be priced from a description, so that card requests a free visit instead
