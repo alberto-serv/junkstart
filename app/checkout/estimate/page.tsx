@@ -227,8 +227,10 @@ export default function EstimatePage() {
             </CardContent>
           </Card>
 
-          {/* Estimate */}
-          <Card className="rounded-lg border-line shadow-brand-sm">
+          {/* Estimate. The one panel on the page carrying the brand gradient:
+              it is the answer the customer came for, and the only card here
+              that is an outcome rather than an input. */}
+          <Card className="rounded-lg border-line bg-brand-band shadow-brand-sm">
             <CardHeader className="pb-3">
               <CardTitle className={cardTitle}>Your Estimate</CardTitle>
             </CardHeader>
@@ -239,7 +241,7 @@ export default function EstimatePage() {
                   included.
                 </p>
               ) : onSite ? (
-                <div className="bg-brand-band border border-line p-5 rounded-lg">
+                <div className="bg-white/60 border border-line-soft p-5 rounded-lg">
                   <p className="text-[19px] font-semibold text-ink">{activeScenario.label} pickup</p>
                   <p className="text-sm text-body mt-1.5">
                     A load this size is priced on site. The crew lead walks it with you when they

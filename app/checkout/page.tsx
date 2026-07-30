@@ -153,11 +153,11 @@ export default function CheckoutPage() {
         <div className="mb-8">
           <Link href="/" className="inline-flex items-center text-flame hover:text-flame-deep mb-5 text-sm font-bold transition-colors">
             <ArrowLeft className="h-4 w-4 mr-1.5" />
-            Back to sizes
+            Back to home
           </Link>
           <p className="eyebrow text-center">Step 1 of 2</p>
           <h1 className="disp text-ink text-[clamp(30px,5vw,52px)] text-center mt-2">
-            Pick Your Pickup Window
+            Schedule Your Pickup
           </h1>
           <p className="text-center text-body mt-3 max-w-[52ch] mx-auto">
             Reserve the day and window first. You size the load and see your price on the next
@@ -171,7 +171,7 @@ export default function CheckoutPage() {
             <CardHeader className="pb-3">
               <CardTitle className={`${cardTitle} flex items-center gap-2.5`}>
                 <CalendarDays className="h-5 w-5 text-flame" />
-                Pick Your Pickup Day
+                Choose date and time
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 Choose a window and the crew confirms your exact arrival time the morning of.

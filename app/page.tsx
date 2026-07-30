@@ -93,7 +93,7 @@ export default function HomePage() {
               <HowStep
                 step={2}
                 title="Size your load"
-                copy="Small through XL, with the examples right on the card. You see your all-in range before you commit."
+                copy="Small through X-Large, with the examples right on the card. You see your all-in range before you commit."
               />
               <HowStep
                 step={3}

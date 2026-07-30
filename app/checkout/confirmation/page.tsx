@@ -63,7 +63,7 @@ export default function ConfirmationPage() {
   const surcharges = parseFloat(data.surcharges) || 0
   const weightText = `~${fmt(data.lowLbs)} to ${fmt(data.highLbs)} lbs`
 
-  // An XL booking arrives with no price, so the receipt drops the quote and
+  // An X-Large booking arrives with no price, so the receipt drops the quote and
   // pickup-detail sections and says the crew prices it on site instead.
   const quoted = parseFloat(data.high) > 0
   const receiptDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })

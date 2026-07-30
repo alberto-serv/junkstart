@@ -28,13 +28,13 @@ prices anything; pricing a job for someone who cannot get a truck this week is w
 | Small | Couch and recliner · mattress set · single closet cleanout | 50 to 400 lbs | $140 – $310 |
 | Medium | Bedroom of furniture · small garage cleanout · appliance haul | 500 to 1,000 lbs | $365 – $540 |
 | Large | Packed single-car garage · full living room · 10x10 storage unit | 1,000 to 1,400 lbs | $540 – $720 |
-| XL | Whole-house cleanout · estate or downsizing job · post-construction site | 1,500 lbs and up | priced on site |
+| X-Large | Whole-house cleanout · estate or downsizing job · post-construction site | 1,500 lbs and up | priced on site |
 
 Those examples ship on the cards themselves, as `Scenario.examples`. "Medium" means nothing
 on its own, and a customer left to interpret it rounds their own job down.
 
-Large stops short of `ON_SITE_THRESHOLD_LBS` on purpose and XL sits past it, so XL never
-quotes. Under the old order that meant a separate "request a visit" flow; under this one it
+Large stops short of `ON_SITE_THRESHOLD_LBS` on purpose and X-Large sits past it, so
+X-Large never quotes. Under the old order that meant a separate "request a visit" flow; under this one it
 is just a booking whose price is settled on arrival, which is the same truck on the same
 day either way.
 

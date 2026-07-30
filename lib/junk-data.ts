@@ -88,12 +88,12 @@ export const ON_SITE_THRESHOLD_LBS = 1500
  *   Small   a few items (50 to 150) through a pickup bed (200 to 400)
  *   Medium  half a garage (500 to 900) through a furnished room (600 to 1,000)
  *   Large   a packed garage or storage unit (1,000 up)
- *   XL      a whole property, which has no price at any weight
+ *   X-Large a whole property, which has no price at any weight
  *
  * Each band's low bound is the low of its smallest sheet row and its high bound
  * is the high of its largest, stopping short of ON_SITE_THRESHOLD_LBS on the
- * large card. XL carries a low bound and no high bound, which is its way of
- * saying "unbounded": it never quotes, it requests a visit.
+ * large card. X-Large carries a low bound and no high bound, which is its way
+ * of saying "unbounded": it never quotes, it is priced on site.
  *
  * The weights are national. Only the prices in MarketConfig vary by market.
  */
@@ -139,7 +139,7 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     id: "xl",
-    label: "XL",
+    label: "X-Large",
     examples: ["Whole-house cleanout", "Estate or downsizing job", "Post-construction site"],
     lowLbs: 1500,
     highLbs: 0,
@@ -264,7 +264,7 @@ export function getQuote(
   market: MarketConfig = MARKET,
 ): Quote {
   // (a) Anything we cannot honestly price from a description goes on site.
-  // Aggregates break the weight bands outright; the XL scenario carries a low
+  // Aggregates break the weight bands outright; the X-Large scenario carries a low
   // bound and no high bound, which is its way of saying "unbounded".
   const onSiteRequired =
     flags.hasAggregates ||
