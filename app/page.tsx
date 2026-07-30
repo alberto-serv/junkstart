@@ -88,7 +88,7 @@ export default function HomePage() {
               subtitle="Pick the closest fit. Nobody measures junk, everybody recognizes it."
             />
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
               {SCENARIOS.map((s) => (
                 <ScenarioCard
                   key={s.id}
@@ -277,6 +277,13 @@ export default function HomePage() {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
+/**
+ * Icon and size on one line, the examples as the body, the weight band alone in
+ * a footer under a hairline. The prose detail line is gone: it said the same
+ * thing as the three examples underneath it, one abstraction level vaguer, and
+ * it wrapped to two or three lines at a different height on every card, which
+ * knocked the lists and the weight bands out of alignment across the row.
+ */
 function ScenarioCard({ scenario, selected, onClick }: { scenario: Scenario; selected: boolean; onClick: () => void }) {
   const Icon = scenario.icon
   const hint = scenario.onSiteOnly
@@ -286,34 +293,46 @@ function ScenarioCard({ scenario, selected, onClick }: { scenario: Scenario; sel
     <button
       onClick={onClick}
       aria-pressed={selected}
-      className={`group relative flex flex-col items-start gap-2 overflow-hidden rounded-lg border-2 p-4 text-left transition-all duration-150 hover:-translate-y-0.5 ${
+      className={`group relative flex h-full flex-col overflow-hidden rounded-xl border-2 p-4 text-left transition-all duration-150 hover:-translate-y-0.5 md:p-5 ${
         selected
           ? "border-flame bg-brand-select shadow-[0_10px_26px_rgba(241,93,42,0.18)]"
           : "border-line bg-white hover:border-[#c4c1bc] hover:shadow-brand-sm"
       }`}
     >
-      <Icon className={`h-7 w-7 ${selected ? "text-flame" : "text-brand"}`} strokeWidth={1.75} />
-      <span className={`text-[14.5px] font-semibold leading-tight ${selected ? "text-flame" : "text-ink"}`}>
-        {scenario.label}
-      </span>
-      <span className="text-[12px] leading-snug text-muted-foreground">{scenario.detail}</span>
+      <div className="flex items-center gap-2.5">
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
+            selected ? "bg-flame text-white" : "bg-[#EEF3FD] text-brand"
+          }`}
+        >
+          <Icon className="h-[18px] w-[18px]" strokeWidth={1.9} />
+        </span>
+        <span className={`disp text-[19px] leading-none ${selected ? "text-flame" : "text-ink"}`}>
+          {scenario.label}
+        </span>
+      </div>
 
       {/* The examples are the card's real content: they are what a customer
           matches their own pile against, so they get the line height. */}
-      <ul className="mt-0.5 flex flex-col gap-1 text-[12px] leading-snug text-body">
+      <ul className="mt-3.5 flex flex-1 flex-col gap-1.5 text-[13px] leading-snug text-body">
         {scenario.examples.map((ex) => (
-          <li key={ex} className="flex gap-1.5">
-            <span className={selected ? "text-flame" : "text-brand"} aria-hidden="true">
-              &middot;
-            </span>
+          <li key={ex} className="flex items-start gap-2">
+            <span
+              aria-hidden="true"
+              className={`mt-[6px] h-1 w-1 shrink-0 rounded-full ${selected ? "bg-flame" : "bg-brand"}`}
+            />
             <span>{ex}</span>
           </li>
         ))}
       </ul>
 
-      <span className={`mt-auto pt-1.5 text-[11.5px] font-bold ${selected ? "text-flame" : "text-muted-foreground"}`}>
+      <div
+        className={`mt-4 border-t pt-3 text-[12px] font-bold ${
+          selected ? "border-flame/25 text-flame" : "border-line-soft text-muted-foreground"
+        }`}
+      >
         {hint}
-      </span>
+      </div>
     </button>
   )
 }

@@ -103,7 +103,6 @@ export interface Scenario {
   id: ScenarioId
   /** Customer language, not ours. */
   label: string
-  detail: string
   /**
    * Three concrete jobs that land in this band. "Medium" means nothing on its
    * own; "bedroom of furniture" is the line a customer matches themselves
@@ -121,7 +120,6 @@ export const SCENARIOS: Scenario[] = [
   {
     id: "small",
     label: "Small",
-    detail: "A few items, up to a pickup bed's worth",
     examples: ["Couch and recliner", "Mattress set", "Single closet cleanout"],
     icon: PackageIcon,
     lowLbs: 50,
@@ -130,7 +128,6 @@ export const SCENARIOS: Scenario[] = [
   {
     id: "medium",
     label: "Medium",
-    detail: "A furnished room, or half a garage",
     examples: ["Bedroom of furniture", "Small garage cleanout", "Appliance haul"],
     icon: Sofa,
     lowLbs: 500,
@@ -139,7 +136,6 @@ export const SCENARIOS: Scenario[] = [
   {
     id: "large",
     label: "Large",
-    detail: "A packed garage, or a storage unit",
     examples: ["Packed single-car garage", "Full living room", "10x10 storage unit"],
     icon: Warehouse,
     lowLbs: 1000,
@@ -148,7 +144,6 @@ export const SCENARIOS: Scenario[] = [
   {
     id: "xl",
     label: "XL",
-    detail: "More than a truck's worth",
     examples: ["Whole-house cleanout", "Estate or downsizing job", "Post-construction site"],
     icon: Home,
     lowLbs: 1500,
