@@ -58,15 +58,12 @@ export default function HomePage() {
       <section className="bg-brand-band-soft border-b border-line-soft">
         <div className="container mx-auto px-4 pt-14 pb-14 md:pt-[60px] md:pb-14">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="disp text-ink mx-auto max-w-[16ch] text-[clamp(36px,5.4vw,58px)]">
-              Pay-By-Weight Junk Removal
+            <h1 className="disp text-ink mx-auto max-w-[20ch] text-[clamp(34px,5.2vw,56px)]">
+              The Most Accurate Way to Price Junk Removal.
             </h1>
-            <p className="mt-[18px] text-body text-lg max-w-[54ch] mx-auto">
-              Garages fill up slowly. A few boxes here. Old furniture there. Before long, the
-              space that was supposed to hold your car is holding everything else.
-            </p>
-            <p className="mt-3 text-body text-lg max-w-[54ch] mx-auto">
-              That&apos;s where JunkStart comes in.
+            <p className="mt-[18px] text-body text-lg max-w-[58ch] mx-auto">
+              Most companies charge by how full the truck looks. We charge by the actual weight of
+              your items, so you pay a precise, verified price every time.
             </p>
             <button
               type="button"
@@ -88,7 +85,7 @@ export default function HomePage() {
               subtitle="Pick the closest fit. Nobody measures junk, everybody recognizes it."
             />
 
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-4 md:gap-4">
               {SCENARIOS.map((s) => (
                 <ScenarioCard
                   key={s.id}
@@ -278,43 +275,42 @@ export default function HomePage() {
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 /**
- * Icon and size on one line, the examples as the body, the weight band alone in
- * a footer under a hairline. The prose detail line is gone: it said the same
- * thing as the three examples underneath it, one abstraction level vaguer, and
- * it wrapped to two or three lines at a different height on every card, which
- * knocked the lists and the weight bands out of alignment across the row.
+ * Two layouts from one card. On desktop the four sit side by side: size on top,
+ * examples as the body, weight band alone in a footer under a hairline, all four
+ * footers on one line because the card is h-full and the list is flex-1.
+ *
+ * On a phone they stack full width instead of squeezing into two columns, which
+ * is what made the row ragged: at half a phone's width every second example
+ * wrapped, so no two cards were the same height and the bands landed wherever.
+ * Full width fits every example on one line, and the band moves up beside the
+ * size, where it reads as that size's price of entry rather than a footnote.
  */
 function ScenarioCard({ scenario, selected, onClick }: { scenario: Scenario; selected: boolean; onClick: () => void }) {
-  const Icon = scenario.icon
   const hint = scenario.onSiteOnly
     ? "We come look, free"
     : `~${scenario.lowLbs.toLocaleString()} to ${scenario.highLbs.toLocaleString()} lbs`
+  const hintTone = selected ? "text-flame" : "text-muted-foreground"
   return (
     <button
       onClick={onClick}
       aria-pressed={selected}
-      className={`group relative flex h-full flex-col overflow-hidden rounded-xl border-2 p-4 text-left transition-all duration-150 hover:-translate-y-0.5 md:p-5 ${
+      className={`group relative flex h-full flex-col overflow-hidden rounded-xl border-2 p-4 text-left transition-all duration-150 md:p-5 md:hover:-translate-y-0.5 ${
         selected
           ? "border-flame bg-brand-select shadow-[0_10px_26px_rgba(241,93,42,0.18)]"
           : "border-line bg-white hover:border-[#c4c1bc] hover:shadow-brand-sm"
       }`}
     >
-      <div className="flex items-center gap-2.5">
-        <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
-            selected ? "bg-flame text-white" : "bg-[#EEF3FD] text-brand"
-          }`}
-        >
-          <Icon className="h-[18px] w-[18px]" strokeWidth={1.9} />
-        </span>
+      <div className="flex items-baseline justify-between gap-3">
         <span className={`disp text-[19px] leading-none ${selected ? "text-flame" : "text-ink"}`}>
           {scenario.label}
         </span>
+        {/* Mobile only. Desktop keeps it in the footer so the four line up. */}
+        <span className={`text-[12px] font-bold md:hidden ${hintTone}`}>{hint}</span>
       </div>
 
       {/* The examples are the card's real content: they are what a customer
           matches their own pile against, so they get the line height. */}
-      <ul className="mt-3.5 flex flex-1 flex-col gap-1.5 text-[13px] leading-snug text-body">
+      <ul className="mt-3 flex flex-1 flex-col gap-1.5 text-[13px] leading-snug text-body md:mt-3.5">
         {scenario.examples.map((ex) => (
           <li key={ex} className="flex items-start gap-2">
             <span
@@ -327,7 +323,7 @@ function ScenarioCard({ scenario, selected, onClick }: { scenario: Scenario; sel
       </ul>
 
       <div
-        className={`mt-4 border-t pt-3 text-[12px] font-bold ${
+        className={`mt-4 hidden border-t pt-3 text-[12px] font-bold md:block ${
           selected ? "border-flame/25 text-flame" : "border-line-soft text-muted-foreground"
         }`}
       >

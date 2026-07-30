@@ -109,7 +109,6 @@ export interface Scenario {
    * against, and it is what keeps them from rounding their own job down.
    */
   examples: string[]
-  icon: LucideIcon
   lowLbs: number
   highLbs: number
   /** No instant quote at any price. Requests a visit instead. */
@@ -121,7 +120,6 @@ export const SCENARIOS: Scenario[] = [
     id: "small",
     label: "Small",
     examples: ["Couch and recliner", "Mattress set", "Single closet cleanout"],
-    icon: PackageIcon,
     lowLbs: 50,
     highLbs: 400,
   },
@@ -129,7 +127,6 @@ export const SCENARIOS: Scenario[] = [
     id: "medium",
     label: "Medium",
     examples: ["Bedroom of furniture", "Small garage cleanout", "Appliance haul"],
-    icon: Sofa,
     lowLbs: 500,
     highLbs: 1000,
   },
@@ -137,7 +134,6 @@ export const SCENARIOS: Scenario[] = [
     id: "large",
     label: "Large",
     examples: ["Packed single-car garage", "Full living room", "10x10 storage unit"],
-    icon: Warehouse,
     lowLbs: 1000,
     highLbs: 1400,
   },
@@ -145,7 +141,6 @@ export const SCENARIOS: Scenario[] = [
     id: "xl",
     label: "XL",
     examples: ["Whole-house cleanout", "Estate or downsizing job", "Post-construction site"],
-    icon: Home,
     lowLbs: 1500,
     highLbs: 0,
     onSiteOnly: true,
