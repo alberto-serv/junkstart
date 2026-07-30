@@ -11,15 +11,16 @@ Booking runs **calendar first, price second**. Availability is what a customer i
 for and the thing most likely to lose them, so the flow reserves the window before it
 prices anything; pricing a job for someone who cannot get a truck this week is wasted work.
 
-1. **Homepage** (`app/page.tsx`) — an availability banner at the very top, the pitch, and
-   the one question: *What size is your load?* Four size cards, Small through XL. The
-   result panel and the mobile price bar are on the page from the first paint, so there is
-   always a **Book my pickup** CTA on screen. Picking a size is optional: it shows the
-   range, and it rides along as a prefill.
+1. **Homepage** (`app/page.tsx`) — an availability banner at the very top, the pitch, how
+   the price gets set, and **Book my pickup**. No estimator: the size question belongs to
+   step 2, and asking it here too meant asking the same question twice, two pages apart,
+   with the second answer being the one that counted. Every control on the page starts the
+   same flow.
 2. **`/checkout`** (step 1 of 2) — day and arrival window, then name, email, mobile,
    pickup address and access notes. No prices anywhere on this page.
 3. **`/checkout/estimate`** (step 2 of 2) — the reserved window in a summary card, the four
-   size cards, the add-ons, and the running all-in total. **Book my pickup** commits.
+   size cards (the only place the size is asked), the add-ons, and the running all-in
+   total. **Book my pickup** commits.
 4. **`/checkout/confirmation`** — a printable receipt.
 
 | Size | Looks like | Weight band | Charlotte price |
@@ -50,7 +51,7 @@ State lives in the query string, so any step is linkable and refresh-safe.
 
 | Hop | Carries |
 | --- | --- |
-| Home → `/checkout` | `scenario`, and only if a size was picked |
+| Home → `/checkout` | nothing. `/checkout` still reads `?scenario=` and passes it through, so a campaign link can preselect a size |
 | `/checkout` → `/checkout/estimate` | `scenario`, `visitDate`, `visitTime`, `address`, `accessNotes`, `customerName`, `customerEmail`, `phone` |
 | `/checkout/estimate` → `/checkout/confirmation` | all of the above plus `scenarioLabel`, `lowLbs`, `highLbs`, `low`, `high`, `minApplied`, `discountApplied`, `surcharges`, `addOns`, `addOnsTotal`, `totalLow`, `totalHigh` |
 
