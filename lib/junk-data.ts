@@ -1,9 +1,6 @@
 import {
-  Bed,
   Bike,
-  Boxes,
   Building2,
-  Container,
   HardHat,
   HelpCircle,
   Home,
@@ -11,7 +8,6 @@ import {
   Package as PackageIcon,
   Sofa,
   Trees,
-  Truck,
   Tv,
   Warehouse,
   WashingMachine,
@@ -83,22 +79,25 @@ export const ON_SITE_THRESHOLD_LBS = 1500
 // ─── 3. Scenario cards ───────────────────────────────────────────────────────
 
 /**
- * The one question the estimator asks. These come verbatim from the cheat
- * sheet's "what the customer says, what it weighs" translation table, which
- * exists because nobody knows what their junk weighs but everybody can point at
- * the pile that looks like theirs.
+ * The one question the estimator asks, collapsed to three sizes.
+ *
+ * The bands are rolled up from the cheat sheet's "what the customer says, what
+ * it weighs" translation table, so the same national weights still drive the
+ * price, but the customer chooses between three answers instead of eight:
+ *
+ *   Small   a few items (50 to 150) through a pickup bed (200 to 400)
+ *   Medium  half a garage (500 to 900) through a furnished room (600 to 1,000)
+ *   Large   a packed garage or storage unit (1,000 up)
+ *   XL      a whole property, which has no price at any weight
+ *
+ * Each band's low bound is the low of its smallest sheet row and its high bound
+ * is the high of its largest, stopping short of ON_SITE_THRESHOLD_LBS on the
+ * large card. XL carries a low bound and no high bound, which is its way of
+ * saying "unbounded": it never quotes, it requests a visit.
  *
  * The weights are national. Only the prices in MarketConfig vary by market.
  */
-export type ScenarioId =
-  | "few-items"
-  | "pickup-bed"
-  | "bedroom"
-  | "living-room"
-  | "half-garage"
-  | "packed-garage"
-  | "storage-unit"
-  | "whole-property"
+export type ScenarioId = "small" | "medium" | "large" | "xl"
 
 export interface Scenario {
   id: ScenarioId
@@ -108,19 +107,15 @@ export interface Scenario {
   icon: LucideIcon
   lowLbs: number
   highLbs: number
-  /** No instant quote at any price. Books an on-site estimate. */
+  /** No instant quote at any price. Requests a visit instead. */
   onSiteOnly?: boolean
 }
 
 export const SCENARIOS: Scenario[] = [
-  { id: "few-items", label: "A few items", detail: "One car trip's worth", icon: PackageIcon, lowLbs: 50, highLbs: 150 },
-  { id: "pickup-bed", label: "A pickup bed's worth", detail: "Level full, one bed", icon: Truck, lowLbs: 200, highLbs: 400 },
-  { id: "bedroom", label: "A furnished bedroom", detail: "Bed set, dresser, the works", icon: Bed, lowLbs: 600, highLbs: 1000 },
-  { id: "living-room", label: "A furnished living room", detail: "Sofas, tables, electronics", icon: Sofa, lowLbs: 800, highLbs: 1300 },
-  { id: "half-garage", label: "Half a garage", detail: "Single car garage, half full", icon: Warehouse, lowLbs: 500, highLbs: 900 },
-  { id: "packed-garage", label: "A packed garage", detail: "Single car, floor to ceiling", icon: Boxes, lowLbs: 1000, highLbs: 1800 },
-  { id: "storage-unit", label: "A storage unit", detail: "5x10 or 10x10, packed", icon: Container, lowLbs: 700, highLbs: 2400 },
-  { id: "whole-property", label: "A whole house or worse", detail: "Estate, hoarding, post-construction", icon: Home, lowLbs: 1500, highLbs: 0, onSiteOnly: true },
+  { id: "small", label: "Small", detail: "A few items, up to a pickup bed's worth", icon: PackageIcon, lowLbs: 50, highLbs: 400 },
+  { id: "medium", label: "Medium", detail: "A furnished room, or half a garage", icon: Sofa, lowLbs: 500, highLbs: 1000 },
+  { id: "large", label: "Large", detail: "A packed garage, or a storage unit", icon: Warehouse, lowLbs: 1000, highLbs: 1400 },
+  { id: "xl", label: "XL", detail: "A whole house, estate or hoarding cleanout", icon: Home, lowLbs: 1500, highLbs: 0, onSiteOnly: true },
 ]
 
 // ─── 4. Flags ────────────────────────────────────────────────────────────────

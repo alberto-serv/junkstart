@@ -25,16 +25,22 @@ interface AddOn { id: string; name: string; price: number; description: string }
 function buildAddOns(): AddOn[] {
   return [
     { id: "donation", name: "Donation Drop-Off & Receipt", price: 0, description: "We route anything still usable to a local charity partner and send you the itemized donation receipt for your taxes. Always free." },
+    { id: "hauling", name: "Full-Service Hauling", price: 45, description: "The crew carries everything out from wherever it sits, upstairs, basement, attic or back yard, instead of you staging it at the curb first." },
     { id: "sweep", name: "Broom-Clean Finish", price: 60, description: "A full sweep, wipe-down and debris check of the cleared space, so a garage or unit is ready to hand off, list, or re-rent the same day." },
     { id: "priority", name: "Same-Day / Next-Day Priority", price: 75, description: "Jumps your pickup to the front of the route when you need it gone now. Subject to same-day crew availability." },
   ]
 }
 
-/** Resolve the ?scenario= param back to the card label the customer picked. */
+/**
+ * Resolve the ?scenario= param back to the size the customer picked. The cards
+ * read "Small" / "Medium" / "Large", which needs a noun once it is standing on
+ * its own next to a price.
+ */
 function scenarioLabelFor(id: string | null): string {
   if (!id) return "Your pickup"
   if (id === "custom") return "Your item tally"
-  return SCENARIOS.find((s) => s.id === id)?.label ?? "Your pickup"
+  const size = SCENARIOS.find((s) => s.id === id)
+  return size ? `${size.label} pickup` : "Your pickup"
 }
 
 // ─── Scheduling helpers ─────────────────────────────────────────────────────
@@ -121,7 +127,7 @@ export default function CheckoutPage() {
     }
 
     // book=1 is the on-site path: no weights, no price, so every field below
-    // stays at zero and the page renders its walkthrough variant.
+    // stays at zero and the page renders its request-a-visit variant.
     const sc = searchParams.get("scenario")
     if (sc) { setScenario(sc); setScenarioLabel(scenarioLabelFor(sc)) }
 
@@ -186,7 +192,7 @@ export default function CheckoutPage() {
   }, [])
 
   // When the customer skips the estimator, no price comes through and we render
-  // the on-site-quote booking flow instead of the priced pickup.
+  // the request-a-visit flow instead of the priced pickup.
   const hasQuote = high > 0
 
   // Add-on fees land on top of the weighed haul price.
@@ -252,7 +258,7 @@ export default function CheckoutPage() {
             Back to your estimate
           </Link>
           <h1 className="disp text-ink text-[clamp(30px,5vw,52px)] text-center">
-            {hasQuote ? "Schedule Your Pickup" : "Book a Free On-Site Quote"}
+            {hasQuote ? "Schedule Your Pickup" : "Request a Free Visit"}
           </h1>
         </div>
 
@@ -260,7 +266,7 @@ export default function CheckoutPage() {
           {/* Pickup Summary */}
           <Card className="rounded-lg border-line shadow-brand-sm">
             <CardHeader className="pb-3">
-              <CardTitle className={cardTitle}>{hasQuote ? "Your Pickup" : "Free On-Site Quote"}</CardTitle>
+              <CardTitle className={cardTitle}>{hasQuote ? "Your Pickup" : "Your Free Visit"}</CardTitle>
             </CardHeader>
             <CardContent>
               {hasQuote ? (
@@ -307,7 +313,7 @@ export default function CheckoutPage() {
             <CardHeader className="pb-3">
               <CardTitle className={`${cardTitle} flex items-center gap-2.5`}>
                 <CalendarDays className="h-5 w-5 text-flame" />
-                {hasQuote ? "Pick Your Pickup Day" : "Pick a Walkthrough Day"}
+                {hasQuote ? "Pick Your Pickup Day" : "Pick a Day for the Visit"}
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 {hasQuote
@@ -571,7 +577,7 @@ export default function CheckoutPage() {
           {/* Confirm & Schedule */}
           <div className="pb-8">
             <button onClick={handleBookService} disabled={!canBook || isLoading} className="btn-flame w-full text-lg">
-              {isLoading ? "Booking..." : hasQuote ? "Confirm & Book Pickup" : "Confirm & Book Walkthrough"}
+              {isLoading ? "Booking..." : hasQuote ? "Confirm & Book Pickup" : "Request This Visit"}
             </button>
             {!canBook && (
               <p className="text-xs text-muted-foreground text-center mt-3">

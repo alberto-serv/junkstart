@@ -10,14 +10,28 @@ scale, at a rate the local franchise sets.
 The homepage (`app/page.tsx`) asks **one question** and produces an honest price range
 before anyone is dispatched.
 
-1. **What do you need us to haul away?** Eight scenario cards, from "a few items" to "a whole house
-   or worse", each carrying a weight band. Nobody knows what their junk weighs, but
-   everybody recognises the pile that looks like theirs.
+1. **How big is the job?** Four size cards, Small through XL, each carrying a weight band
+   rolled up from the cheat sheet's translation table. Nobody knows what their junk weighs,
+   but everybody knows whether it is a carload or a garage.
 2. **Any of these in the pile?** Asked last, once the load is described: mattress and tire
    steppers, which apply the market's per-item disposal surcharges, and an aggregates
    toggle for dirt, concrete, brick and tile.
-3. **A live result.** The range appears as soon as a card is picked, alongside the scale
-   promise: the estimate sets expectations, the scale sets the price.
+3. **A live result.** The result panel and the mobile price bar are on the page from the
+   first paint: before a size is picked they prompt and point back at step 1, so there is
+   always a CTA on screen. Picking a size swaps the prompt for the range, alongside the
+   scale promise: the estimate sets expectations, the scale sets the price.
+
+| Size | Weight band | Charlotte price |
+| --- | --- | --- |
+| Small | 50 to 400 lbs | $140 – $310 |
+| Medium | 500 to 1,000 lbs | $365 – $540 |
+| Large | 1,000 to 1,400 lbs | $540 – $720 |
+| XL | 1,500 lbs and up | no price, requests a visit |
+
+Large stops short of `ON_SITE_THRESHOLD_LBS` on purpose, and XL sits past it: a whole
+property cannot be priced from a description, so that card requests a free visit instead
+of quoting. `/checkout?book=1` is that path end to end, from **Request a Visit** through
+the confirmation receipt.
 
 Customers who would rather list exactly what they have can **tally their items** from a
 link directly under the cards, which sums `ITEM_WEIGHTS` into a weight band and overrides
@@ -25,9 +39,9 @@ the card. Customers with **aggregates** get a callout instead of a number,
 saying the load will be quoted on site, because a pickup bed of dirt alone runs 2,000 lbs
 and would make every household estimate on the page wrong.
 
-Anything at or above `ON_SITE_THRESHOLD_LBS` (1,500 lbs) stops quoting online and books a
-free walkthrough. That covers the XL card by definition, and the packed-garage and
-storage-unit cards on their high bound.
+Anything at or above `ON_SITE_THRESHOLD_LBS` (1,500 lbs) stops quoting online and requests
+a free visit. That covers the XL card by definition, and any item tally that adds up past
+the threshold.
 
 From there: `/checkout` (add-ons, contact details, pickup address, date and arrival window)
 and `/checkout/confirmation` (a printable receipt). Both read the same params the homepage
@@ -91,7 +105,7 @@ weights are national and only the prices are local:
 
 | Cheat sheet | Code | Used by |
 | --- | --- | --- |
-| "What the customer says → weight estimate" translation table | `SCENARIOS` | The one question on the homepage |
+| "What the customer says → weight estimate" translation table | `SCENARIOS`, rolled up into three sizes | The one question on the homepage |
 | Item weight table | `ITEM_WEIGHTS` + `lbsFromItems()` | The "tally your items" fallback |
 | Fill-in-the-blank market box | `MarketConfig` + `MARKET` | `getQuote()`, resolved by ZIP in production |
 | "How to build a quote" steps | `getQuote()` | Homepage, checkout, confirmation |

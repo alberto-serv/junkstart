@@ -27,11 +27,17 @@ export default function HomePage() {
     customLbs ?? (activeScenario ? { lowLbs: activeScenario.lowLbs, highLbs: activeScenario.highLbs } : null)
   const quote = bounds ? getQuote(bounds.lowLbs, bounds.highLbs, flags) : null
 
-  // Aggregates get their own callout with their own routes, so the price panel
-  // stands down rather than showing a number we would have to walk back.
-  const showResult = Boolean(quote) && !flags.hasAggregates
+  // Three states for the price panel and the mobile bar, which always render so
+  // there is a CTA on screen from the first paint on both breakpoints:
+  //   onSite   too big, or aggregates, to price from a description
+  //   quote    a size (or a tally) is picked and priced
+  //   neither  nothing picked yet, so the panel prompts and points at step 1
+  const onSite = flags.hasAggregates || Boolean(quote?.onSiteRequired)
 
   const activeLabel = customLbs ? "Your tally" : activeScenario?.label ?? ""
+
+  const scrollToSizes = () =>
+    document.getElementById("pick-a-size")?.scrollIntoView({ behavior: "smooth", block: "start" })
 
   const pickScenario = (id: ScenarioId) => {
     setScenario(id)
@@ -84,19 +90,19 @@ export default function HomePage() {
               onClick={() => router.push("/checkout?book=1")}
               className="mt-[22px] inline-flex items-center gap-2 text-base font-bold text-flame hover:text-flame-deep transition-colors"
             >
-              Rather have us take a look first? Book a free on-site quote
+              Rather have us take a look first? Request a free visit
             </button>
           </div>
         </div>
       </section>
 
       {/* ── Step 1: what are we hauling ────────────────────────────────── */}
-      <section className="border-t border-border bg-white">
+      <section id="pick-a-size" className="border-t border-border bg-white scroll-mt-4">
         <div className="container mx-auto px-4 py-12 md:py-14">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <StepHeader
               step={1}
-              title="What do you need us to haul away?"
+              title="How big is the job?"
               subtitle="Pick the closest fit. Nobody measures junk, everybody recognizes it."
             />
 
@@ -197,30 +203,60 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Result ─────────────────────────────────────────────────────── */}
-      {showResult && quote && bounds && (
-        <section className="border-t border-border bg-white">
+      {/* ── Result ─────────────────────────────────────────────────────
+          Always on the page. Before a size is picked it prompts instead of
+          pricing, so the section, and a CTA, are there from the first paint. */}
+      <section className="border-t border-border bg-white">
           <div className="container mx-auto px-4 py-12 md:py-14">
             <div className="max-w-4xl mx-auto">
-              {quote.onSiteRequired ? (
+              {!quote && !onSite ? (
                 <div className="rounded-lg border border-line bg-brand-band p-8 shadow-brand-sm md:px-9">
-                  <p className="eyebrow mb-2.5">Free on-site estimate</p>
+                  <p className="eyebrow mb-2.5">Your price</p>
+                  <h3 className="disp text-ink text-[clamp(22px,3vw,30px)]">
+                    Pick a size and your price lands here
+                  </h3>
+                  <p className="mt-3 max-w-[58ch] text-body">
+                    Small, medium or large covers most jobs. Choose the closest one and you get an
+                    all-in range, trip fee, labor and disposal included, before anyone is
+                    dispatched. XL jobs skip the guessing and get a free visit instead.
+                  </p>
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <button type="button" onClick={scrollToSizes} className="btn-flame shrink-0">
+                      Pick Your Size
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => router.push("/checkout?book=1")}
+                      className="text-sm font-bold text-flame transition-colors hover:text-flame-deep sm:ml-2"
+                    >
+                      Or request a free visit
+                    </button>
+                  </div>
+                </div>
+              ) : onSite ? (
+                <div className="rounded-lg border border-line bg-brand-band p-8 shadow-brand-sm md:px-9">
+                  <p className="eyebrow mb-2.5">Free visit</p>
                   <h3 className="disp text-ink text-[clamp(22px,3vw,30px)]">
                     A job this size deserves a real walkthrough
                   </h3>
                   <p className="mt-3 max-w-[58ch] text-body">
-                    Loads at this scale vary too much to price from a description. A crew lead
-                    walks it with you, weighs the plan against what is actually there, and gives
-                    you a firm number before any work starts. Free, with no obligation.
+                    Loads at this scale vary too much to price from a description. Request a visit
+                    and a crew lead walks it with you, weighs the plan against what is actually
+                    there, and hands you a firm number before any work starts. Free, with no
+                    obligation.
                   </p>
                   <button onClick={() => router.push("/checkout?book=1")} className="btn-flame mt-6">
-                    Book a Free On-Site Estimate
+                    Request a Visit
                   </button>
                 </div>
-              ) : (
+              ) : quote && bounds ? (
                 <div className="overflow-hidden rounded-lg border border-line bg-brand-band shadow-brand-sm">
                   <div className="flex flex-col gap-6 p-8 md:flex-row md:items-center md:justify-between md:px-9">
                     <div>
+                      <p className="eyebrow mb-2.5">
+                        {activeLabel} &middot; ~{bounds.lowLbs.toLocaleString()} to{" "}
+                        {bounds.highLbs.toLocaleString()} lbs
+                      </p>
                       <div className="flex items-baseline gap-1.5">
                         {/* rangeStr collapses to one figure when the bounds
                             match, which the market minimum makes common. */}
@@ -254,11 +290,10 @@ export default function HomePage() {
                     </p>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
-        </section>
-      )}
+      </section>
 
       {/* ── Trust Strip ────────────────────────────────────────────────── */}
       <section className="border-t border-border bg-background">
@@ -277,25 +312,34 @@ export default function HomePage() {
           flag in step 2 shows its effect without scrolling. The shared footer
           carries matching bottom padding on this route so the bar never covers
           it. Desktop keeps the inline result card instead. */}
-      {showResult && quote && bounds && (
-        <div
+      <div
           className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-white/95 px-4 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-6px_24px_rgba(21,38,68,0.14)] backdrop-blur lg:hidden"
         >
-          {quote.onSiteRequired ? (
+          {!quote && !onSite ? (
+            <>
+              <p className="mb-2 text-[13px] text-muted-foreground">
+                Small, medium, large or XL.
+                <span className="font-semibold text-ink"> Your price shows up here.</span>
+              </p>
+              <button type="button" onClick={scrollToSizes} className="btn-flame w-full text-base">
+                Pick Your Size
+              </button>
+            </>
+          ) : onSite ? (
             <>
               <p className="mb-2 text-[13px] text-muted-foreground">
                 {activeLabel}
-                <span className="font-semibold text-ink"> &middot; free on-site estimate</span>
+                <span className="font-semibold text-ink"> &middot; priced on site, free</span>
               </p>
               <button
                 type="button"
                 onClick={() => router.push("/checkout?book=1")}
                 className="btn-flame w-full text-base"
               >
-                Book a Free On-Site Estimate
+                Request a Visit
               </button>
             </>
-          ) : (
+          ) : quote && bounds ? (
             <>
               <div className="mb-2 flex items-baseline justify-between gap-3">
                 <span className="truncate text-[13px] text-muted-foreground">
@@ -314,9 +358,8 @@ export default function HomePage() {
                 Book This Pickup
               </button>
             </>
-          )}
-        </div>
-      )}
+          ) : null}
+      </div>
 
       {/* ── Bottom CTA ─────────────────────────────────────────────────── */}
       <section className="border-t border-border bg-background">
@@ -338,7 +381,7 @@ export default function HomePage() {
 function ScenarioCard({ scenario, selected, onClick }: { scenario: Scenario; selected: boolean; onClick: () => void }) {
   const Icon = scenario.icon
   const hint = scenario.onSiteOnly
-    ? "On-site estimate"
+    ? "We come look, free"
     : `~${scenario.lowLbs.toLocaleString()} to ${scenario.highLbs.toLocaleString()} lbs`
   return (
     <button
