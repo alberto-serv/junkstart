@@ -52,12 +52,9 @@ export default function HomePage() {
                   banner is off screen, and "when can you come" is the question
                   standing between them and the click. Inside the label it wrapped
                   to a second line on a phone and doubled the button's height. */}
-              <p className="text-[13px] text-muted-foreground">
-                {slot && (
-                  <span className="font-semibold text-ink">Next opening {slot.short}. </span>
-                )}
-                Takes about two minutes. Nothing is charged today.
-              </p>
+              {slot && (
+                <p className="text-[13px] font-semibold text-ink">Next opening {slot.short}</p>
+              )}
             </div>
           </div>
         </div>
