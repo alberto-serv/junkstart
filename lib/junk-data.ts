@@ -149,7 +149,7 @@ export const SCENARIOS: Scenario[] = [
     id: "xl",
     label: "XL",
     detail: "More than a truck's worth",
-    examples: ["Whole-house cleanout", "Estate or hoarding job", "Post-construction site"],
+    examples: ["Whole-house cleanout", "Estate or downsizing job", "Post-construction site"],
     icon: Home,
     lowLbs: 1500,
     highLbs: 0,
