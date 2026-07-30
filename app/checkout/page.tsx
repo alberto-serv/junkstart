@@ -47,9 +47,9 @@ export default function CheckoutPage() {
   const [phoneNumber, setPhoneNumber] = useState("")
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("")
-  const [calendarWeekStart, setCalendarWeekStart] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const suggestionRef = useRef<HTMLDivElement>(null)
+  const dateStripRef = useRef<HTMLDivElement>(null)
 
   // Dates come off the real clock, so they resolve after mount rather than at
   // render: this route is prerendered and would otherwise ship a build-time
@@ -140,10 +140,8 @@ export default function CheckoutPage() {
     router.push(`/checkout/estimate?${params.toString()}`)
   }, [canContinue, scenario, serviceAddress, addressLine2, accessNotes, customerInfo, phoneNumber, selectedDate, selectedTimeSlot, router])
 
-  // Calendar pagination: show 5 days at a time
-  const visibleDates = availableDates.slice(calendarWeekStart, calendarWeekStart + 5)
-  const canGoBack = calendarWeekStart > 0
-  const canGoForward = calendarWeekStart + 5 < availableDates.length
+  const nudgeDates = (dir: 1 | -1) =>
+    dateStripRef.current?.scrollBy({ left: dir * 300, behavior: "smooth" })
 
   const cardTitle = "font-display font-bold tracking-[-0.015em] leading-[1.08] text-ink text-[22px]"
 
@@ -182,43 +180,68 @@ export default function CheckoutPage() {
                 {/* Date picker */}
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Choose a date</Label>
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setCalendarWeekStart(Math.max(0, calendarWeekStart - 5))} disabled={!canGoBack}
-                      className="flex items-center justify-center w-10 h-10 shrink-0 rounded-md border-[1.5px] border-line text-ink hover:border-[#c4c1bc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                  {/* The strip used to page five days at a time between two
+                      arrows. Five fixed columns is a desktop measurement: on a
+                      375px phone the card padding and the arrows leave ~199px
+                      for the grid, so each tile came out ~33px wide — narrower
+                      than the two-digit date inside it, and the day, number and
+                      month all spilled their box.
+
+                      Same control the /lp booking widget already ships: one
+                      scrollable row of fixed-width tiles, swiped on a phone,
+                      nudged by the arrows on a pointer. Nothing has to divide
+                      evenly into the available width. */}
+                  <div className="flex items-stretch gap-2">
+                    <button type="button" aria-label="Earlier dates" onClick={() => nudgeDates(-1)}
+                      className="hidden w-9 shrink-0 items-center justify-center self-stretch rounded-lg border-[1.5px] border-line text-muted-foreground transition-colors hover:border-[#c4c1bc] hover:text-ink sm:flex">
                       <ChevronLeft className="h-4 w-4" />
                     </button>
-                    <div className="flex-1 grid grid-cols-5 gap-2">
-                      {visibleDates.length === 0
-                        // Pre-mount placeholder. Same box, same grid, so the real
-                        // dates drop in without the card changing height.
-                        ? Array.from({ length: 5 }).map((_, i) => (
-                            <div key={i} className="h-[86px] rounded-lg border-2 border-line-soft bg-muted/40" />
+                    {/* `min-w-0 flex-1` is load-bearing: as a plain flex item the
+                        strip takes its full max-content width as its flex base,
+                        which widens the card instead of scrolling inside it.
+                        Tiles carry an explicit width AND height so every one is
+                        the same box no matter what is in it — a three-letter day
+                        and a one-digit date must not size differently from a
+                        two-digit one. */}
+                    <div
+                      ref={dateStripRef}
+                      className="flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    >
+                      {availableDates.length === 0
+                        // Pre-mount placeholder. Same tiles, same row, so the
+                        // real dates drop in without the card changing height.
+                        ? Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="h-[84px] w-[62px] shrink-0 rounded-lg border-2 border-line-soft bg-muted/40" />
                           ))
-                        : visibleDates.map((date) => {
+                        : availableDates.map((date) => {
                         const isSelected = selectedDate && isSameDay(date, selectedDate)
                         return (
                           <button key={date.toISOString()} type="button" onClick={() => setSelectedDate(date)}
-                            className={`flex flex-col items-center py-3 px-1 rounded-lg border-2 text-center transition-all ${
+                            aria-pressed={Boolean(isSelected)}
+                            className={`flex h-[84px] w-[62px] shrink-0 snap-start flex-col items-center justify-center gap-1 rounded-lg border-2 px-1 text-center transition-colors ${
                               isSelected ? "border-brand bg-brand" : "border-line hover:border-[#c4c1bc]"
                             }`}>
-                            <span className={`text-[11px] font-bold uppercase tracking-[0.08em] ${isSelected ? "text-[#c3d5f7]" : "text-muted-foreground"}`}>
+                            <span className={`text-[11px] font-bold uppercase leading-none tracking-[0.08em] ${isSelected ? "text-[#c3d5f7]" : "text-muted-foreground"}`}>
                               {date.toLocaleDateString("en-US", { weekday: "short" })}
                             </span>
-                            <span className={`text-[22px] font-extrabold my-0.5 ${isSelected ? "text-white" : "text-ink"}`}>
+                            <span className={`text-[21px] font-extrabold leading-none ${isSelected ? "text-white" : "text-ink"}`}>
                               {date.getDate()}
                             </span>
-                            <span className={`text-[11px] ${isSelected ? "text-[#c3d5f7]" : "text-muted-foreground"}`}>
+                            <span className={`text-[11px] leading-none ${isSelected ? "text-[#c3d5f7]" : "text-muted-foreground"}`}>
                               {date.toLocaleDateString("en-US", { month: "short" })}
                             </span>
                           </button>
                         )
                       })}
                     </div>
-                    <button type="button" onClick={() => setCalendarWeekStart(Math.min(availableDates.length - 5, calendarWeekStart + 5))} disabled={!canGoForward}
-                      className="flex items-center justify-center w-10 h-10 shrink-0 rounded-md border-[1.5px] border-line text-ink hover:border-[#c4c1bc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                    <button type="button" aria-label="Later dates" onClick={() => nudgeDates(1)}
+                      className="hidden w-9 shrink-0 items-center justify-center self-stretch rounded-lg border-[1.5px] border-line text-muted-foreground transition-colors hover:border-[#c4c1bc] hover:text-ink sm:flex">
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
+                  <p className="mt-2 text-[11.5px] text-muted-foreground">
+                    Crews run Monday through Saturday. Swipe or scroll for later dates.
+                  </p>
                 </div>
 
                 {/* Time slots */}

@@ -303,8 +303,12 @@ export default function EstimatePage() {
             </CardContent>
           </Card>
 
-          {/* Confirm */}
-          <div className="pb-8">
+          {/* Confirm. Desktop only: below `lg` the fixed bar at the bottom of
+              the viewport carries this exact button, and rendering both put two
+              identical "Book my pickup" CTAs on screen at once — the customer
+              had to work out whether they did different things. The bar wins on
+              a phone because it is the one that is always reachable. */}
+          <div className="hidden pb-8 lg:block">
             <button onClick={handleBook} disabled={!activeScenario || isLoading} className="btn-flame w-full text-lg">
               {isLoading ? "Booking..." : "Book my pickup"}
             </button>
@@ -314,6 +318,14 @@ export default function EstimatePage() {
               </p>
             )}
           </div>
+
+          {/* The hint the desktop button carries still has to reach a phone,
+              where there is no room for it inside the bar. */}
+          {!activeScenario && (
+            <p className="pb-8 text-center text-xs text-muted-foreground lg:hidden">
+              Pick the size that looks closest to your load
+            </p>
+          )}
         </div>
       </div>
 

@@ -44,23 +44,18 @@ export default function HomePage() {
               your items, so you pay a precise, verified price every time.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3">
-              {/* The soonest slot rides on the button, not just the banner at the
-                  top of the page: by the time a customer has read the pitch the
-                  banner is off screen, and "when can you come" is the question
-                  standing between them and the click. */}
-              <button
-                type="button"
-                onClick={startBooking}
-                className="btn-flame flex-wrap justify-center text-base"
-              >
+              <button type="button" onClick={startBooking} className="btn-flame text-base">
                 Book my pickup
-                {slot && (
-                  <span className="text-[13.5px] font-semibold opacity-75">
-                    &middot; next opening {slot.short}
-                  </span>
-                )}
               </button>
+              {/* The soonest slot sits under the button rather than inside it:
+                  by the time a customer has read the pitch the availability
+                  banner is off screen, and "when can you come" is the question
+                  standing between them and the click. Inside the label it wrapped
+                  to a second line on a phone and doubled the button's height. */}
               <p className="text-[13px] text-muted-foreground">
+                {slot && (
+                  <span className="font-semibold text-ink">Next opening {slot.short}. </span>
+                )}
                 Takes about two minutes. Nothing is charged today.
               </p>
             </div>
@@ -120,13 +115,15 @@ export default function HomePage() {
           Anchored for the whole page on a phone. The shared footer carries
           matching bottom padding on this route so the bar never covers it. */}
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-white/95 px-4 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-6px_24px_rgba(21,38,68,0.14)] backdrop-blur lg:hidden">
-        <button type="button" onClick={startBooking} className="btn-flame w-full flex-wrap justify-center text-base">
+        {/* Slot above the button, not inside the label — same reason as the hero,
+            and it matches the running-total row on /checkout/estimate's bar. */}
+        {slot && (
+          <p className="mb-2 text-center text-[12.5px] text-muted-foreground">
+            Next opening <span className="font-semibold text-ink">{slot.short}</span>
+          </p>
+        )}
+        <button type="button" onClick={startBooking} className="btn-flame w-full text-base">
           Book my pickup
-          {slot && (
-            <span className="text-[13px] font-semibold opacity-75">
-              &middot; next opening {slot.short}
-            </span>
-          )}
         </button>
       </div>
 

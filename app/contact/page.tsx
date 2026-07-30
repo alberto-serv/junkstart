@@ -110,7 +110,10 @@ export default function ContactPage() {
                           <select
                             id="job"
                             defaultValue={selectedJob}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            /* text-base below md matches Input/Textarea: iOS
+                               Safari zooms the whole page in on focus when a
+                               control's text is under 16px. */
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           >
                             <option value="">Select a job type</option>
                             {JOBS.map((j) => (

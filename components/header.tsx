@@ -23,8 +23,11 @@ export function Header() {
           href={PHONE_TEL}
           className="inline-flex items-center gap-2 text-sm font-bold text-ink transition-colors hover:text-flame"
         >
-          <Phone className="h-4 w-4 text-flame" />
-          <span className="hidden sm:inline">{PHONE}</span>
+          <Phone className="h-4 w-4 shrink-0 text-flame" />
+          {/* Shown at every width. Hiding it on a phone left a lone orange icon
+              floating opposite the logo, and the phone number is the one thing
+              on this bar a mobile visitor is most likely to want. */}
+          <span className="whitespace-nowrap">{PHONE}</span>
         </a>
       </div>
     </header>
