@@ -3,13 +3,10 @@
 import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { Scale, Shield, Star } from "lucide-react"
 import {
-  AlertTriangle, Minus, Plus, Scale, Shield, Star, X,
-} from "lucide-react"
-import {
-  SCENARIOS, getQuote, lbsFromItems,
-  ITEM_WEIGHTS, AGGREGATES_WARNING, PHONE, rangeStr,
-  type Scenario, type ScenarioId, type QuoteFlags,
+  SCENARIOS, getQuote, NO_FLAGS, PHONE, rangeStr,
+  type Scenario, type ScenarioId,
 } from "@/lib/junk-data"
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -17,48 +14,34 @@ import {
 export default function HomePage() {
   const router = useRouter()
   const [scenario, setScenario] = useState<ScenarioId | null>(null)
-  const [flags, setFlags] = useState<QuoteFlags>({ mattressCount: 0, tireCount: 0, hasAggregates: false })
-  // Set by the item tally. When present it overrides the scenario card.
-  const [customLbs, setCustomLbs] = useState<{ lowLbs: number; highLbs: number } | null>(null)
-  const [tallyOpen, setTallyOpen] = useState(false)
 
+  // One question, one answer. Per-item surcharges and the aggregates check moved
+  // off the page: the crew catches them on site, where the scale settles the
+  // price anyway, so the estimator quotes the size and nothing else.
   const activeScenario = SCENARIOS.find((s) => s.id === scenario) ?? null
-  const bounds =
-    customLbs ?? (activeScenario ? { lowLbs: activeScenario.lowLbs, highLbs: activeScenario.highLbs } : null)
-  const quote = bounds ? getQuote(bounds.lowLbs, bounds.highLbs, flags) : null
+  const bounds = activeScenario
+    ? { lowLbs: activeScenario.lowLbs, highLbs: activeScenario.highLbs }
+    : null
+  const quote = bounds ? getQuote(bounds.lowLbs, bounds.highLbs, NO_FLAGS) : null
 
   // Three states for the price panel and the mobile bar, which always render so
   // there is a CTA on screen from the first paint on both breakpoints:
-  //   onSite   too big, or aggregates, to price from a description
-  //   quote    a size (or a tally) is picked and priced
-  //   neither  nothing picked yet, so the panel prompts and points at step 1
-  const onSite = flags.hasAggregates || Boolean(quote?.onSiteRequired)
+  //   onSite   too big to price from a description
+  //   quote    a size is picked and priced
+  //   neither  nothing picked yet, so the panel prompts and points at the cards
+  const onSite = Boolean(quote?.onSiteRequired)
 
-  const activeLabel = customLbs ? "Your tally" : activeScenario?.label ?? ""
+  const activeLabel = activeScenario?.label ?? ""
 
   const scrollToSizes = () =>
     document.getElementById("pick-a-size")?.scrollIntoView({ behavior: "smooth", block: "start" })
 
-  const pickScenario = (id: ScenarioId) => {
-    setScenario(id)
-    setCustomLbs(null)
-    setTallyOpen(false)
-  }
-
-  const applyTally = (next: { lowLbs: number; highLbs: number }) => {
-    setCustomLbs(next)
-    setScenario(null)
-    setTallyOpen(false)
-  }
-
   const handleCheckout = () => {
     if (!quote || !bounds) return
     const params = new URLSearchParams({
-      scenario: customLbs ? "custom" : scenario ?? "custom",
+      scenario: scenario ?? "custom",
       lowLbs: bounds.lowLbs.toString(),
       highLbs: bounds.highLbs.toString(),
-      mattressCount: flags.mattressCount.toString(),
-      tireCount: flags.tireCount.toString(),
       low: quote.low.toString(),
       high: quote.high.toString(),
       minApplied: quote.minApplied ? "1" : "0",
@@ -96,12 +79,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Step 1: what are we hauling ────────────────────────────────── */}
+      {/* ── The one question ───────────────────────────────────────────── */}
       <section id="pick-a-size" className="border-t border-border bg-white scroll-mt-4">
         <div className="container mx-auto px-4 py-12 md:py-14">
           <div className="max-w-4xl mx-auto">
             <StepHeader
-              step={1}
               title="How big is the job?"
               subtitle="Pick the closest fit. Nobody measures junk, everybody recognizes it."
             />
@@ -112,93 +94,10 @@ export default function HomePage() {
                   key={s.id}
                   scenario={s}
                   selected={scenario === s.id}
-                  onClick={() => pickScenario(s.id)}
+                  onClick={() => setScenario(s.id)}
                 />
               ))}
             </div>
-
-            {/* The tally sits directly under the cards as the alternative to
-                picking one, rather than buried in a later step. */}
-            {/* Centred under the card grid. The open estimator keeps its own
-                left-aligned layout, so only the two collapsed states centre. */}
-            <div className="mt-5">
-              {customLbs ? (
-                <div className="text-center">
-                  <span className="inline-flex items-center gap-2 rounded-full border-2 border-flame bg-brand-select px-4 py-2 text-[13.5px] font-semibold text-ink">
-                    Your tally: ~{customLbs.lowLbs.toLocaleString()} to {customLbs.highLbs.toLocaleString()} lbs
-                    <button
-                      type="button"
-                      aria-label="Clear tally and pick a card instead"
-                      onClick={() => setCustomLbs(null)}
-                      className="text-flame transition-colors hover:text-flame-deep"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </span>
-                </div>
-              ) : tallyOpen ? (
-                <ItemEstimator onApply={applyTally} onCancel={() => setTallyOpen(false)} />
-              ) : (
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => setTallyOpen(true)}
-                    className="text-sm font-bold text-flame transition-colors hover:text-flame-deep"
-                  >
-                    Know exactly what you&apos;ve got? Tally your items instead.
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Step 2: flags, the last thing we ask ───────────────────────── */}
-      <section className="border-t border-border bg-background">
-        <div className="container mx-auto px-4 py-12 md:py-14">
-          <div className="max-w-3xl mx-auto">
-            <StepHeader
-              step={2}
-              title="Any of these in the pile?"
-              subtitle="These carry their own disposal fees, so we add them up front rather than on the day."
-            />
-
-            <div className="flex flex-wrap items-center justify-center gap-2.5">
-              <CountChip
-                label="Mattresses"
-                value={flags.mattressCount}
-                max={4}
-                onChange={(n) => setFlags((f) => ({ ...f, mattressCount: n }))}
-              />
-              <CountChip
-                label="Tires"
-                value={flags.tireCount}
-                max={8}
-                onChange={(n) => setFlags((f) => ({ ...f, tireCount: n }))}
-              />
-              <button
-                type="button"
-                aria-pressed={flags.hasAggregates}
-                onClick={() => setFlags((f) => ({ ...f, hasAggregates: !f.hasAggregates }))}
-                className={`rounded-full border-2 px-4 py-2 text-[13.5px] font-semibold transition-colors ${
-                  flags.hasAggregates
-                    ? "border-flame bg-flame text-white"
-                    : "border-line bg-white text-ink hover:border-flame"
-                }`}
-              >
-                Dirt, concrete, brick or tile
-              </button>
-            </div>
-
-            {flags.hasAggregates && (
-              <div className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-4">
-                <div className="flex items-start gap-2.5">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                  <p className="text-[13.5px] leading-relaxed text-amber-900">{AGGREGATES_WARNING}</p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </section>
@@ -405,153 +304,13 @@ function ScenarioCard({ scenario, selected, onClick }: { scenario: Scenario; sel
   )
 }
 
-/** Collapsed to a single chip until tapped, then a stepper. Keeps the flag row
- *  to one line for the majority of jobs that have neither. */
-function CountChip({ label, value, max, onChange }: { label: string; value: number; max: number; onChange: (n: number) => void }) {
-  if (value === 0) {
-    return (
-      <button
-        type="button"
-        onClick={() => onChange(1)}
-        className="rounded-full border-2 border-line bg-white px-4 py-2 text-[13.5px] font-semibold text-ink transition-colors hover:border-flame"
-      >
-        {label}
-      </button>
-    )
-  }
-  return (
-    <div className="inline-flex items-center gap-2 rounded-full border-2 border-flame bg-brand-select py-1 pl-4 pr-1.5">
-      <span className="text-[13.5px] font-semibold text-ink">{label}</span>
-      <button
-        type="button"
-        aria-label={`Fewer ${label.toLowerCase()}`}
-        onClick={() => onChange(value - 1)}
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-ink transition-colors hover:text-flame"
-      >
-        <Minus className="h-3.5 w-3.5" />
-      </button>
-      <span className="w-4 text-center text-[14px] font-bold tabular-nums text-ink">{value}</span>
-      <button
-        type="button"
-        aria-label={`More ${label.toLowerCase()}`}
-        disabled={value >= max}
-        onClick={() => onChange(value + 1)}
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-ink transition-colors hover:text-flame disabled:opacity-40"
-      >
-        <Plus className="h-3.5 w-3.5" />
-      </button>
-    </div>
-  )
-}
-
-/**
- * The "I know exactly what I have" path. Sums the reference bands in
- * ITEM_WEIGHTS into a low/high pound range and hands it up, where it overrides
- * whichever scenario card was selected.
- */
-function ItemEstimator({
-  onApply,
-  onCancel,
-}: {
-  onApply: (bounds: { lowLbs: number; highLbs: number }) => void
-  onCancel: () => void
-}) {
-  const [counts, setCounts] = useState<Record<string, number>>({})
-
-  const total = lbsFromItems(counts)
-  const anySelected = Object.values(counts).some((n) => n > 0)
-
-  const bump = (id: string, delta: number) =>
-    setCounts((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) }))
-
-  return (
-    <div className="mt-4 rounded-lg border border-line bg-white p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-semibold text-ink">What are we picking up?</p>
-          <p className="mt-1 text-[13px] text-muted-foreground">
-            Tap through what you have. We turn it into a weight range using the same table our
-            crews use.
-          </p>
-        </div>
-        <button
-          type="button"
-          aria-label="Close item tally"
-          onClick={onCancel}
-          className="shrink-0 text-muted-foreground transition-colors hover:text-flame"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-
-      <div className="mt-4 max-h-[320px] divide-y divide-line-soft overflow-y-auto">
-        {ITEM_WEIGHTS.map((item) => {
-          const n = counts[item.id] ?? 0
-          return (
-            <div key={item.id} className="flex items-center justify-between gap-3 py-2.5">
-              <span className={`text-sm ${n > 0 ? "font-semibold text-ink" : "text-body"}`}>
-                {item.name}
-                <span className="ml-1.5 text-[12px] text-muted-foreground">
-                  {item.lowLbs === item.highLbs ? `${item.lowLbs} lbs` : `${item.lowLbs} to ${item.highLbs} lbs`}
-                </span>
-              </span>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => bump(item.id, -1)}
-                  disabled={n === 0}
-                  aria-label={`Fewer ${item.name}`}
-                  className="flex h-8 w-8 items-center justify-center rounded-md border border-line text-ink transition-colors hover:border-flame disabled:cursor-not-allowed disabled:opacity-35"
-                >
-                  <Minus className="h-3.5 w-3.5" />
-                </button>
-                <span className="w-5 text-center text-sm font-bold tabular-nums text-ink">{n}</span>
-                <button
-                  type="button"
-                  onClick={() => bump(item.id, 1)}
-                  aria-label={`More ${item.name}`}
-                  className="flex h-8 w-8 items-center justify-center rounded-md border border-line text-ink transition-colors hover:border-flame"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-body">
-          {anySelected ? (
-            <>
-              That is about{" "}
-              <span className="font-bold text-ink">
-                {total.lowLbs.toLocaleString()} to {total.highLbs.toLocaleString()} lbs
-              </span>
-              .
-            </>
-          ) : (
-            "Add an item to see your weight range."
-          )}
-        </p>
-        <button
-          type="button"
-          onClick={() => onApply(total)}
-          disabled={!anySelected}
-          className="btn-flame shrink-0 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Use this weight
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function StepHeader({ step, title, subtitle }: { step: number; title: string; subtitle?: string }) {
+/** The numeral is optional: with the flags step gone there is only one question
+ *  on the page, and a lone "1" badge implies a step 2 that no longer exists. */
+function StepHeader({ step, title, subtitle }: { step?: number; title: string; subtitle?: string }) {
   return (
     <div className="text-center mb-[34px]">
       <div className="inline-flex items-center gap-3">
-        <span className="step-num">{step}</span>
+        {step !== undefined && <span className="step-num">{step}</span>}
         <h2 className="disp text-ink text-[clamp(24px,3.5vw,38px)]">{title}</h2>
       </div>
       {subtitle && <p className="text-sm text-muted-foreground mt-2.5 max-w-xl mx-auto">{subtitle}</p>}

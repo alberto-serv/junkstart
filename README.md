@@ -13,12 +13,9 @@ before anyone is dispatched.
 1. **How big is the job?** Four size cards, Small through XL, each carrying a weight band
    rolled up from the cheat sheet's translation table. Nobody knows what their junk weighs,
    but everybody knows whether it is a carload or a garage.
-2. **Any of these in the pile?** Asked last, once the load is described: mattress and tire
-   steppers, which apply the market's per-item disposal surcharges, and an aggregates
-   toggle for dirt, concrete, brick and tile.
-3. **A live result.** The result panel and the mobile price bar are on the page from the
-   first paint: before a size is picked they prompt and point back at step 1, so there is
-   always a CTA on screen. Picking a size swaps the prompt for the range, alongside the
+2. **A live result.** The result panel and the mobile price bar are on the page from the
+   first paint: before a size is picked they prompt and point back at the cards, so there
+   is always a CTA on screen. Picking a size swaps the prompt for the range, alongside the
    scale promise: the estimate sets expectations, the scale sets the price.
 
 | Size | Weight band | Charlotte price |
@@ -33,20 +30,21 @@ property cannot be priced from a description, so that card requests a free visit
 of quoting. `/checkout?book=1` is that path end to end, from **Request a Visit** through
 the confirmation receipt.
 
-Customers who would rather list exactly what they have can **tally their items** from a
-link directly under the cards, which sums `ITEM_WEIGHTS` into a weight band and overrides
-the card. Customers with **aggregates** get a callout instead of a number,
-saying the load will be quoted on site, because a pickup bed of dirt alone runs 2,000 lbs
-and would make every household estimate on the page wrong.
+The size cards are the whole estimator. The item tally and the mattress / tire /
+aggregates step are gone from the page: the crew catches per-item surcharges and heavy
+aggregate loads on site, where the certified scale settles the price anyway. `getQuote()`
+still takes a `QuoteFlags` argument and still applies the market's surcharges, and
+`ITEM_WEIGHTS` / `lbsFromItems()` are still exported, so any of that can come back without
+touching the pricing math. The homepage passes `NO_FLAGS`.
 
 Anything at or above `ON_SITE_THRESHOLD_LBS` (1,500 lbs) stops quoting online and requests
-a free visit. That covers the XL card by definition, and any item tally that adds up past
-the threshold.
+a free visit, which is the XL card by definition.
 
 From there: `/checkout` (add-ons, contact details, pickup address, date and arrival window)
 and `/checkout/confirmation` (a printable receipt). Both read the same params the homepage
-emits: `scenario`, `lowLbs`, `highLbs`, `mattressCount`, `tireCount`, `low`, `high`,
-`minApplied`, `discountApplied`, `surcharges`.
+emits: `scenario`, `lowLbs`, `highLbs`, `low`, `high`, `minApplied`, `discountApplied`,
+`surcharges`. They still read `mattressCount` and `tireCount` when present, and default
+both to zero.
 
 One marketing route ships alongside the estimator: `/lp/omaha/junk-removal`, a paid
 landing page with an embedded three-step scheduling module that books a pickup window
@@ -106,7 +104,7 @@ weights are national and only the prices are local:
 | Cheat sheet | Code | Used by |
 | --- | --- | --- |
 | "What the customer says → weight estimate" translation table | `SCENARIOS`, rolled up into three sizes | The one question on the homepage |
-| Item weight table | `ITEM_WEIGHTS` + `lbsFromItems()` | The "tally your items" fallback |
+| Item weight table | `ITEM_WEIGHTS` + `lbsFromItems()` | Nothing on the page today, kept for the tally |
 | Fill-in-the-blank market box | `MarketConfig` + `MARKET` | `getQuote()`, resolved by ZIP in production |
 | "How to build a quote" steps | `getQuote()` | Homepage, checkout, confirmation |
 
