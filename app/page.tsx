@@ -36,8 +36,8 @@ export default function HomePage() {
       <section className="bg-brand-band-soft border-b border-line-soft">
         <div className="container mx-auto px-4 pt-14 pb-14 md:pt-[60px] md:pb-14">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="disp text-ink mx-auto max-w-[20ch] text-[clamp(34px,5.2vw,56px)]">
-              The Most Accurate Way to Price Junk Removal.
+            <h1 className="disp text-ink mx-auto max-w-[15ch] text-[clamp(36px,5.4vw,58px)]">
+              Pay by Weight, not by Chance
             </h1>
             <p className="mt-[18px] text-body text-lg max-w-[58ch] mx-auto">
               Most companies charge by how full the truck looks. We charge by the actual weight of
